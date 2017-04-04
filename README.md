@@ -1,0 +1,2 @@
+# WebComicTranslatePlatform
+一个网络漫画翻译平台
