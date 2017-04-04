@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>{{page_title}}</title>
+		<script src="/fabric.js"></script>
+		<style type="text/css">
+body {
+	overflow-y: scroll;
+}
+.column-left {
+	float: left;
+	width: 100%;
+}
+.column-right label {
+	width: 150px;
+	display: inline-block;
+}
+		</style>
+	</head>
+	<body>
+		<div class="column-left">
+			{{#next_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{/next_page_index}}<canvas id="c"></canvas>{{#next_page_index}}</a></span>{{/next_page_index}}
+		</div>
+		<div class="nav">
+			{{#previous_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{#lang}}{{Previous page}}{{/lang}}</a></span>{{/previous_page_index}}
+			{{#next_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{#lang}}{{Next page}}{{/lang}}</a></span>{{/next_page_index}}
+		</div>
+		<textarea id="json" readonly style="display: none">{{content}}</textarea>
+		<script src="/view.js"></script>
+	</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{#lang}}{{Add page}}{{/lang}}</title>
+  </head>
+  <body>
+    <h1>{{#lang}}{{Add page}}{{/lang}}</h1>
+    <form action="/comic/{{comic_id}}/page/add" method="post" enctype="multipart/form-data">
+      <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
+      <br />
+      <input id="title" type="text" name="title" />
+      <br />
+      <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
+      <br />
+      <textarea id="description" name="description"></textarea>
+      <br />
+      <input type="file" name="file" />
+      <br />
+      <input type="submit" value="{{#lang}}{{Submit}}{{/lang}}">
+    </form>
+  </body>
+</html>
