@@ -9,12 +9,21 @@ import OpenCC
 import SwiftGD
 
 class SiteMain {
-    struct DBConfig {
+    struct DatabaseConfig {
         var host: String
         var user: String
         var password: String
         var dbname: String
         var tablePrefix: String
+    }
+
+    struct ServerConfig {
+        var address: String
+        var port: UInt16
+    }
+
+    struct SiteConfig {
+        var uploadSizeLimit: Int
     }
 
     typealias PageHandler = (SessionInfo?, HTTPRequest, HTTPResponse) -> SiteResponse
@@ -64,7 +73,9 @@ class SiteMain {
         }
     }
 
-    var dbconfig: DBConfig
+    var databaseConfig: DatabaseConfig
+    var serverConfig: ServerConfig
+    var siteConfig: SiteConfig
     var routes: Routes
     var controller: SiteController
 
@@ -73,15 +84,27 @@ class SiteMain {
         self.routes = Routes()
 
         do {
-            let config = try String(contentsOfFile: "./db.conf.json", encoding: String.Encoding.utf8)
+            let config = try String(contentsOfFile: "./config.json", encoding: String.Encoding.utf8)
             if let jsonData = config.data(using: String.Encoding.utf8) {
                 if let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-                    let host = json["host"] as? String,
-                    let user = json["user"] as? String,
-                    let password = json["password"] as? String,
-                    let dbname = json["dbname"] as? String,
-                    let tablePrefix = json["tablePrefix"] as? String {
-                    dbconfig = DBConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
+
+                    let databaseConfigJSON = json["databaseConfig"] as? [String: Any],
+                    let host = databaseConfigJSON["host"] as? String,
+                    let user = databaseConfigJSON["user"] as? String,
+                    let password = databaseConfigJSON["password"] as? String,
+                    let dbname = databaseConfigJSON["dbname"] as? String,
+                    let tablePrefix = databaseConfigJSON["tablePrefix"] as? String,
+
+                    let serverConfigJSON = json["serverConfig"] as? [String: Any],
+                    let address = serverConfigJSON["address"] as? String,
+                    let port = serverConfigJSON["port"] as? UInt16,
+
+                    let siteConfigJSON = json["siteConfig"] as? [String: Any],
+                    let uploadSizeLimit = siteConfigJSON["uploadSizeLimit"] as? Int
+                {
+                    self.databaseConfig = DatabaseConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
+                    self.serverConfig = ServerConfig(address: address, port: port)
+                    self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit)
                 } else {
                     fatalError("Load config failed")
                 }
@@ -92,10 +115,10 @@ class SiteMain {
             fatalError("Load config failed")
         }
 
-        guard let mysql = MySQLPerfect(host: dbconfig.host, user: dbconfig.user, passwd: dbconfig.password, dbname: dbconfig.dbname) else {
+        guard let mysql = MySQLPerfect(host: databaseConfig.host, user: databaseConfig.user, passwd: databaseConfig.password, dbname: databaseConfig.dbname) else {
             fatalError("Database init failed")
         }
-        let dbStorage = DatabaseStorage(database: mysql, prefix: dbconfig.tablePrefix)
+        let dbStorage = DatabaseStorage(database: mysql, prefix: databaseConfig.tablePrefix)
         let data = DataManager(dbStorage: dbStorage, memoryStorage: MemoryStorage())
         guard let utilities = UtilitiesPerfect() else {
             fatalError("Utilities init failed")
@@ -170,8 +193,7 @@ class SiteMain {
                             }
 
                             // Validate file size
-                            //TODO: make size limit configurable
-                            guard upload.fileSize > 0 && upload.fileSize < (1024 * 1024 * 10) else {
+                            guard upload.fileSize > 0 && upload.fileSize < self.siteConfig.uploadSizeLimit else {
                                 return self.controller.error(session: session, message: "File size")
                             }
 
@@ -224,8 +246,8 @@ class SiteMain {
 
 
         let server = HTTPServer()
-        server.serverAddress = "localhost"
-        server.serverPort = 8080
+        server.serverAddress = serverConfig.address
+        server.serverPort = serverConfig.port
         server.addRoutes(routes)
         server.documentRoot = "./webroot" // Setting the document root will add a default URL route which permits static files to be served from within.
 
