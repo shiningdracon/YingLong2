@@ -97,10 +97,12 @@ class SiteMain {
 
                     let serverConfigJSON = json["serverConfig"] as? [String: Any],
                     let address = serverConfigJSON["address"] as? String,
-                    let port = serverConfigJSON["port"] as? UInt16,
+                    let portString = serverConfigJSON["port"] as? String,
+                    let port = UInt16(portString),
 
                     let siteConfigJSON = json["siteConfig"] as? [String: Any],
-                    let uploadSizeLimit = siteConfigJSON["uploadSizeLimit"] as? Int
+                    let uploadSizeLimitString = siteConfigJSON["uploadSizeLimit"] as? String,
+                    let uploadSizeLimit = Int(uploadSizeLimitString)
                 {
                     self.databaseConfig = DatabaseConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
                     self.serverConfig = ServerConfig(address: address, port: port)
