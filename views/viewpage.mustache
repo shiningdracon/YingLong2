@@ -20,11 +20,19 @@ body {
 	</head>
 	<body>
 		<div class="column-left">
-			{{#next_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{/next_page_index}}<canvas id="c"></canvas>{{#next_page_index}}</a></span>{{/next_page_index}}
+			<span><a href="/comic/{{comic_id}}/page/{{#next_page_index}}{{index}}{{/next_page_index}}{{^next_page_index}}end{{/next_page_index}}"><canvas id="c"></canvas></a></span>
 		</div>
 		<div class="nav">
 			{{#previous_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{#lang}}{{Previous page}}{{/lang}}</a></span>{{/previous_page_index}}
+			{{^previous_page_index}}<span>{{#lang}}{{Previous page}}{{/lang}}</span>{{/previous_page_index}}
 			{{#next_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{#lang}}{{Next page}}{{/lang}}</a></span>{{/next_page_index}}
+			{{^next_page_index}}<span><a href="/comic/{{comic_id}}/page/end">{{#lang}}{{Next page}}{{/lang}}</a></span>{{/next_page_index}}
+			<input id="comic_id" style="display: none" value="{{comic_id}}">
+			<select id="quick_jump">
+				{{#quick_jump}}
+				<option value="{{index}}" {{selected}}>{{index}}</option>
+				{{/quick_jump}}
+			</select>
 		</div>
 		<textarea id="json" readonly style="display: none">{{content}}</textarea>
 		<script src="/view.js"></script>

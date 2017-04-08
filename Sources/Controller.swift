@@ -69,27 +69,34 @@ public final class SiteController {
             if let comic = try self.dataManager.getComic(id: comicId) {
                 var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
                 data["comic_id"] = comicId
-                if pageIndex <= comic.pageCount {
+                if pageIndex > 0 && pageIndex <= comic.pageCount {
                     if let page = try self.dataManager.getPage(comicId: comicId, pageIndex: pageIndex) {
                         data["page_title"] = "《\(i18n(comic.title, locale: session?.locale))》\(i18n(page.title, locale: session?.locale)) / \(pageIndex)"
                         data["page_index"] = pageIndex
                         if pageIndex > 1 {
                             data["previous_page_index"] = ["index": pageIndex - 1]
                         }
-                        data["next_page_index"] = ["index": pageIndex + 1]
+                        if pageIndex < comic.pageCount {
+                            data["next_page_index"] = ["index": pageIndex + 1]
+                        }
+                        var jumpArray: Array<[String: Any]> = Array(1...comic.pageCount).map({ ["index": $0 as Any] })
+                        jumpArray[Int(pageIndex-1)]["selected"] = "selected"
+                        data["quick_jump"] = jumpArray
                         data["title"] = i18n(page.title, locale: session?.locale)
                         data["description"] = i18n(page.description, locale: session?.locale)
                         data["content"] = i18n(page.content, locale: session?.locale)
                         return SiteResponse(status: .OK(view: "viewpage.mustache", data: data), session: session)
                     }
-                } else if pageIndex == comic.pageCount + 1 {
-                    return SiteResponse(status: .OK(view: "viewlastpage.mustache", data: [:]), session: session)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
         } catch {
             return SiteResponse(status: .Error(message: error.localizedDescription), session: session)
         }
+    }
+
+    public func viewLastPage(session: SessionInfo?, comicId: UInt32) -> SiteResponse {
+        return SiteResponse(status: .OK(view: "viewlastpage.mustache", data: [:]), session: session)
     }
 
     public func editPage(session: SessionInfo?, comicId: UInt32, pageIndex: UInt32) -> SiteResponse {
@@ -182,7 +189,7 @@ public final class SiteController {
             var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
             data["page_title"] = "" //TODO:
             if let comicList = try self.dataManager.getComicList(offset: offset, limit: display) {
-                var dataComicList: [[String: Any]] = []
+                var dataComicList: Array<[String: Any]> = []
                 for comic in comicList {
                     var dataComic: [String: Any] = [:]
                     dataComic["id"] = comic.id

@@ -190,6 +190,8 @@ class SiteMain {
                     return self.controller.viewPage(session: session, comicId: cid, pageIndex: pidx)
                 } else if request.urlVariables["pidx"] == "add" {
                     return self.controller.addPage(session: session, comicId: cid)
+                } else if request.urlVariables["pidx"] == "end" {
+                    return self.controller.viewLastPage(session: session, comicId: cid)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
