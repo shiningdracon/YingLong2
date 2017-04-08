@@ -66,5 +66,5 @@ Packages/
 *.xcodeproj
 Tests/
 webroot/
-db.conf.json
+config.json
 server.log
