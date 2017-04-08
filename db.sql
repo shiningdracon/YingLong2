@@ -19,6 +19,14 @@ create table pages(
 	PRIMARY KEY (`id`, comic_id, `index`)
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
+create table chapters(
+	id int(10) unsigned NOT NULL AUTO_INCREMENT,
+	comic_id int(10) unsigned NOT NULL,
+	page_id int(10) unsigned NOT NULL,
+	title varchar(50) NOT NULL DEFAULT '',
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB CHARACTER SET=utf8;
+
 create table comments(
 	id int(10) unsigned NOT NULL AUTO_INCREMENT,
 	page_id int(10) unsigned NOT NULL,
