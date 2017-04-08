@@ -1,12 +1,13 @@
 import Foundation
 
 protocol UtilitiesProtocol {
-    func ChineseConvertS2T(s: String) -> String
-    func ChineseConvertT2S(t: String) -> String
+    func ChineseConvertS2T(_ s: String) -> String
+    func ChineseConvertT2S(_ t: String) -> String
 }
 
 public struct SessionInfo {
     var remoteAddress: String
+    var locale: SiteI18n.Locale
 }
 
 public enum SiteResponseStatus {
@@ -34,6 +35,19 @@ public final class SiteController {
         self.dataManager = data
     }
 
+    func i18n(_ ori: String, locale: SiteI18n.Locale?) -> String {
+        if locale != nil {
+            switch locale! {
+            case .zh_CN:
+                return utilities.ChineseConvertT2S(ori)
+            case .zh_TW:
+                return utilities.ChineseConvertS2T(ori)
+            }
+        } else {
+            return ori
+        }
+    }
+
     func formatTime(time: Double, timezone: Int, daySavingTime: Int) -> String {
         let date: Date = Date(timeIntervalSince1970: time)
         let diff = Double((timezone + daySavingTime) * 3600)
@@ -46,26 +60,26 @@ public final class SiteController {
 
     // handlers
     public func main(session: SessionInfo?, page: UInt32) -> SiteResponse {
-        let data: [String: Any] = ["lang": SiteI18n.getI18n()]
+        let data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
         return SiteResponse(status: .OK(view: "main.mustache", data: data), session: session)
     }
 
     public func viewPage(session: SessionInfo?, comicId: UInt32, pageIndex: UInt32) -> SiteResponse {
         do {
             if let comic = try self.dataManager.getComic(id: comicId) {
-                var data: [String: Any] = ["lang": SiteI18n.getI18n()]
+                var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
                 data["comic_id"] = comicId
                 if pageIndex <= comic.pageCount {
                     if let page = try self.dataManager.getPage(comicId: comicId, pageIndex: pageIndex) {
-                        data["page_title"] = "《\(comic.title)》\(page.title)(\(pageIndex))"
+                        data["page_title"] = "《\(i18n(comic.title, locale: session?.locale))》\(i18n(page.title, locale: session?.locale)) / \(pageIndex)"
                         data["page_index"] = pageIndex
                         if pageIndex > 1 {
                             data["previous_page_index"] = ["index": pageIndex - 1]
                         }
                         data["next_page_index"] = ["index": pageIndex + 1]
-                        data["title"] = page.title
-                        data["description"] = page.description
-                        data["content"] = page.content
+                        data["title"] = i18n(page.title, locale: session?.locale)
+                        data["description"] = i18n(page.description, locale: session?.locale)
+                        data["content"] = i18n(page.content, locale: session?.locale)
                         return SiteResponse(status: .OK(view: "viewpage.mustache", data: data), session: session)
                     }
                 } else if pageIndex == comic.pageCount + 1 {
@@ -81,7 +95,7 @@ public final class SiteController {
     public func editPage(session: SessionInfo?, comicId: UInt32, pageIndex: UInt32) -> SiteResponse {
         do {
             if let page = try self.dataManager.getPage(comicId: comicId, pageIndex: pageIndex) {
-                var data: [String: Any] = ["lang": SiteI18n.getI18n()]
+                var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
                 data["comic_id"] = comicId
                 data["page_index"] = pageIndex
                 data["title"] = page.title
@@ -118,7 +132,7 @@ public final class SiteController {
             guard let _ = try self.dataManager.getComic(id: comicId) else {
                 return SiteResponse(status: .NotFound, session: session)
             }
-            var data: [String: Any] = ["lang": SiteI18n.getI18n()]
+            var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
             data["comic_id"] = comicId
             return SiteResponse(status: .OK(view: "addpage.mustache", data: data), session: session)
         } catch {
@@ -165,7 +179,7 @@ public final class SiteController {
         let offset: UInt32 = (page <= 1 ? 0 : page - 1) * display
 
         do {
-            var data: [String: Any] = ["lang": SiteI18n.getI18n()]
+            var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
             data["page_title"] = "" //TODO:
             if let comicList = try self.dataManager.getComicList(offset: offset, limit: display) {
                 var dataComicList: [[String: Any]] = []
@@ -190,13 +204,13 @@ public final class SiteController {
     public func viewComic(session: SessionInfo?, comicId: UInt32) -> SiteResponse {
         do {
             if let comic = try self.dataManager.getComic(id: comicId) {
-                var data: [String: Any] = ["lang": SiteI18n.getI18n()]
-                data["page_title"] = "《\(comic.title)》"
+                var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
+                data["page_title"] = "《\(i18n(comic.title, locale: session?.locale))》"
                 data["comic_id"] = comic.id
-                data["title"] = comic.title
+                data["title"] = i18n(comic.title, locale: session?.locale)
                 data["author"] = comic.author
                 data["poster"] = comic.poster
-                data["description"] = comic.description
+                data["description"] = i18n(comic.description, locale: session?.locale)
                 data["page_count"] = comic.pageCount
                 return SiteResponse(status: .OK(view: "viewcomic.mustache", data: data), session: session)
             }
@@ -207,7 +221,7 @@ public final class SiteController {
     }
 
     public func addComic(session: SessionInfo?) -> SiteResponse {
-        let data: [String: Any] = ["lang": SiteI18n.getI18n()]
+        let data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
         return SiteResponse(status: .OK(view: "addcomic.mustache", data: data), session: session)
     }
 
@@ -236,3 +250,4 @@ extension Dictionary {
         }
     }
 }
+

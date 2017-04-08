@@ -15,7 +15,7 @@ class UtilitiesPerfect: UtilitiesProtocol {
         self.openccT2S = t2s
     }
 
-    func ChineseConvertS2T(s: String) -> String {
+    func ChineseConvertS2T(_ s: String) -> String {
         if let t = self.openccS2T.convert(s) {
             return t
         } else {
@@ -23,8 +23,8 @@ class UtilitiesPerfect: UtilitiesProtocol {
         }
     }
 
-    func ChineseConvertT2S(t: String) -> String {
-        if let s = self.openccS2T.convert(t) {
+    func ChineseConvertT2S(_ t: String) -> String {
+        if let s = self.openccT2S.convert(t) {
             return s
         } else {
             return ""

@@ -28,6 +28,29 @@ class SiteMain {
 
     typealias PageHandler = (SessionInfo?, HTTPRequest, HTTPResponse) -> SiteResponse
 
+    static func parseAcceptLanguage(_ value: String) -> SiteI18n.Locale {
+        let components = value.components(separatedBy: ",")
+        for language in components {
+            let params = language.components(separatedBy: CharacterSet(charactersIn: "-_"))
+            if params.count == 1 {
+                if params[0].caseInsensitiveCompare("zh") == .orderedSame {
+                    return .zh_CN
+                }
+            } else if params.count > 1 {
+                if params[0].caseInsensitiveCompare("zh") == .orderedSame {
+                    if params[1].caseInsensitiveCompare("tw") == .orderedSame ||
+                        params[1].caseInsensitiveCompare("hk") == .orderedSame ||
+                        params[1].caseInsensitiveCompare("mo") == .orderedSame {
+                        return .zh_TW
+                    } else {
+                        return .zh_CN
+                    }
+                }
+            }
+        }
+        return .zh_CN
+    }
+
     struct CommonHandler: MustachePageHandler {
         var pageHandler: PageHandler
 
@@ -40,7 +63,9 @@ class SiteMain {
             let request = contxt.webRequest
             let response = contxt.webResponse
             let templatesDir = "./views"
-            let session = SessionInfo(remoteAddress: request.remoteAddress.host)
+            let locale: SiteI18n.Locale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
+
+            let session = SessionInfo(remoteAddress: request.remoteAddress.host, locale: locale)
 
             let result = self.pageHandler(session, request, response)
 
