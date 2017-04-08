@@ -1,20 +1,14 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>{{#lang}}{{Add comic}}{{/lang}}</title>
-  </head>
-  <body>
+{{> header}}
     <h1>{{#lang}}{{Add comic}}{{/lang}}</h1>
     <form action="/comic/add" method="post">
-      <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
-      <br />
-      <input id="title" type="text" name="title" />
-      <br />
-      <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
-      <br />
-      <textarea id="description" name="description"></textarea>
-      <br />
-      <input type="submit" value="{{#lang}}{{Submit}}{{/lang}}">
+      <div class="form-group">
+        <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
+        <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{title_placeholder}}{{/lang}}" />
+      </div>
+      <div class="form-group">
+        <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
+        <textarea class="form-control" rows="3" id="description" name="description" placeholder="{{#lang}}{{description_placeholder}}{{/lang}}"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">{{#lang}}{{Submit}}{{/lang}}</button>
     </form>
-  </body>
-</html>
+{{> footer}}
