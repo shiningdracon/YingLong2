@@ -57,6 +57,7 @@ public final class SiteController {
                 data["comic_id"] = comicId
                 if pageIndex <= comic.pageCount {
                     if let page = try self.dataManager.getPage(comicId: comicId, pageIndex: pageIndex) {
+                        data["page_title"] = "《\(comic.title)》\(page.title)(\(pageIndex))"
                         data["page_index"] = pageIndex
                         if pageIndex > 1 {
                             data["previous_page_index"] = ["index": pageIndex - 1]
@@ -133,7 +134,7 @@ public final class SiteController {
             let pageIndex = comic.pageCount + 1
             let pageId = try self.dataManager.addPage(comicId: comicId, pageIndex: pageIndex, title: title, poster: "guest", description: description, content: "{\"backgroundImage\":{\"type\":\"image\",\"originX\":\"left\",\"originY\":\"top\",\"left\":0,\"top\":0,\"fill\":\"rgb(0,0,0)\",\"stroke\":null,\"strokeWidth\":0,\"strokeDashArray\":null,\"strokeLineCap\":\"butt\",\"strokeLineJoin\":\"miter\",\"strokeMiterLimit\":10,\"scaleX\":1,\"scaleY\":1,\"angle\":0,\"flipX\":false,\"flipY\":false,\"opacity\":1,\"shadow\":null,\"visible\":true,\"clipTo\":null,\"backgroundColor\":\"\",\"fillRule\":\"nonzero\",\"globalCompositeOperation\":\"source-over\",\"transformMatrix\":null,\"skewX\":0,\"skewY\":0,\"crossOrigin\":\"\",\"alignX\":\"none\",\"alignY\":\"none\",\"meetOrSlice\":\"meet\",\"src\":\"\(imgWebURL)\",\"filters\":[]}}")
 
-            guard self.dataManager.updateComic(id: comicId, title: comic.title, pageCount: pageIndex, description: comic.description) else {
+            guard self.dataManager.updateComic(id: comicId, title: comic.title, author: comic.author, pageCount: pageIndex, description: comic.description) else {
                 return SiteResponse(status: .Error(message: "DB failed"), session: session)
             }
 
@@ -165,6 +166,7 @@ public final class SiteController {
 
         do {
             var data: [String: Any] = ["lang": SiteI18n.getI18n()]
+            data["page_title"] = "" //TODO:
             if let comicList = try self.dataManager.getComicList(offset: offset, limit: display) {
                 var dataComicList: [[String: Any]] = []
                 for comic in comicList {
@@ -189,8 +191,10 @@ public final class SiteController {
         do {
             if let comic = try self.dataManager.getComic(id: comicId) {
                 var data: [String: Any] = ["lang": SiteI18n.getI18n()]
+                data["page_title"] = "《\(comic.title)》"
                 data["comic_id"] = comic.id
                 data["title"] = comic.title
+                data["author"] = comic.author
                 data["poster"] = comic.poster
                 data["description"] = comic.description
                 data["page_count"] = comic.pageCount
@@ -207,9 +211,9 @@ public final class SiteController {
         return SiteResponse(status: .OK(view: "addcomic.mustache", data: data), session: session)
     }
 
-    public func postAddComic(session: SessionInfo?, title: String, description: String) -> SiteResponse {
+    public func postAddComic(session: SessionInfo?, title: String, author: String, description: String) -> SiteResponse {
         do {
-            let comicId = try self.dataManager.addComic(title: title, poster: "guest", description: description)
+            let comicId = try self.dataManager.addComic(title: title, author: author, poster: "guest", description: description)
             return SiteResponse(status: .Redirect(location: "/comic/\(comicId)"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)

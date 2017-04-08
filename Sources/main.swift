@@ -152,8 +152,9 @@ class SiteMain {
         addRoute(method: .post, uri: "/comic/add", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             let title = request.param(name: "title") ?? ""
+            let author = request.param(name: "author") ?? ""
             let description = request.param(name: "description") ?? ""
-            return self.controller.postAddComic(session: session, title: title, description: description)
+            return self.controller.postAddComic(session: session, title: title, author: author, description: description)
         })
 
         addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in

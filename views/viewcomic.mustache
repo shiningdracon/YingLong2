@@ -1,13 +1,6 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<title>{{page_title}}</title>
-	</head>
-	<body>
+{{> header}}
 		<h1>{{title}}</h1>
 		<address class="author">{{author}}</address>
 		<summary>{{description}}</summary>
-		<a href="/comic/{{comic_id}}/page/add">{{#lang}}{{Add page}}{{/lang}}</a>
-	</body>
-</html>
+		<a href="/comic/{{comic_id}}/page/add" rel="nofollow">{{#lang}}{{Add page}}{{/lang}}</a>
+{{> footer}}

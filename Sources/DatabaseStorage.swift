@@ -62,10 +62,11 @@ public final class DatabaseStorage {
         return []
     }
 
-    public func addComic(title: String, poster: String, pageCount: UInt32, description: String) -> UInt32? {
-        guard let insertId = db.insert(statement: "insert into \(prefix)comics (title, poster, description, page_count) values(?,?,?,?)",
+    public func addComic(title: String, author: String, poster: String, pageCount: UInt32, description: String) -> UInt32? {
+        guard let insertId = db.insert(statement: "insert into \(prefix)comics (title, author, poster, description, page_count) values(?,?,?,?,?)",
             params: [
                 .string(title),
+                .string(author),
                 .string(poster),
                 .string(description),
                 .uint(UInt(pageCount))
@@ -80,10 +81,11 @@ public final class DatabaseStorage {
         return UInt32(insertId)
     }
 
-    public func updateComic(id: UInt32, title: String, pageCount: UInt32, description: String) -> Bool {
-        let ret = db.update(statement: "update \(prefix)comics set title=?, page_count=?, description=? where id=?",
+    public func updateComic(id: UInt32, title: String, author: String, pageCount: UInt32, description: String) -> Bool {
+        let ret = db.update(statement: "update \(prefix)comics set title=?, author=?, page_count=?, description=? where id=?",
             params: [
                 .string(title),
+                .string(author),
                 .uint(UInt(pageCount)),
                 .string(description),
                 .uint(UInt(id))

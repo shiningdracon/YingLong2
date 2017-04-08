@@ -1,6 +1,7 @@
 create table comics(
 	id int(10) unsigned NOT NULL AUTO_INCREMENT,
 	title varchar(50) NOT NULL DEFAULT '',
+	author varchar(50) NOT NULL DEFAULT '',
 	poster varchar(200) NOT NULL DEFAULT '',
 	page_count int(10) unsigned NOT NULL DEFAULT 0,
 	description TEXT,

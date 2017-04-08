@@ -1,18 +1,20 @@
 {{> header}}
     <h1>{{#lang}}{{Add page}}{{/lang}}</h1>
-    <form action="/comic/{{comic_id}}/page/add" method="post" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
-        <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{optional_title_placeholder}}{{/lang}}" />
-      </div>
-      <div class="form-group">
-        <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
-        <textarea class="form-control" rows="3" id="description" name="description" placeholder="{{#lang}}{{optional_description_placeholder}}{{/lang}}"></textarea>
-      </div>
-      <div class="form-group">
-        <label for="file">{{#lang}}{{File}}{{/lang}}</label>
-        <input type="file" id="file" name="file" />
-      </div>
-      <button type="submit" class="btn btn-primary">{{#lang}}{{Submit}}{{/lang}}</button>
-    </form>
+    <div class="col-md-6">
+      <form action="/comic/{{comic_id}}/page/add" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
+          <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{optional_title_placeholder}}{{/lang}}" />
+        </div>
+        <div class="form-group">
+          <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
+          <textarea class="form-control" rows="3" id="description" name="description" placeholder="{{#lang}}{{optional_description_placeholder}}{{/lang}}"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="file">{{#lang}}{{File}}{{/lang}}</label>
+          <input type="file" id="file" name="file" />
+        </div>
+        <button type="submit" class="btn btn-primary">{{#lang}}{{Submit}}{{/lang}}</button>
+      </form>
+    </div>
 {{> footer}}

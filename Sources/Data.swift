@@ -3,6 +3,7 @@ import Foundation
 public struct DataComic {
     var id: UInt32
     var title: String
+    var author: String
     var poster: String
     var pageCount: UInt32
     var description: String
@@ -10,6 +11,7 @@ public struct DataComic {
     init(_ args: [String: Any]) throws {
         id = try item(from: args["id"])
         title = try item(from: args["title"])
+        author = try item(from: args["author"])
         poster = try item(from: args["poster"])
         pageCount = try item(from: args["page_count"])
         description = try item(from: args["description"])
@@ -111,15 +113,15 @@ public final class DataManager {
         return comics
     }
 
-    public func addComic(title: String, poster: String, description: String) throws -> UInt32 {
-        guard let insertId = dbStorage.addComic(title: title, poster: poster, pageCount: 0, description: description) else {
+    public func addComic(title: String, author: String, poster: String, description: String) throws -> UInt32 {
+        guard let insertId = dbStorage.addComic(title: title, author: author, poster: poster, pageCount: 0, description: description) else {
             throw DataError.dbError
         }
         return insertId
     }
 
-    public func updateComic(id: UInt32, title: String, pageCount: UInt32, description: String) -> Bool {
-        return dbStorage.updateComic(id: id, title: title, pageCount: pageCount, description: description)
+    public func updateComic(id: UInt32, title: String, author: String, pageCount: UInt32, description: String) -> Bool {
+        return dbStorage.updateComic(id: id, title: title, author: author, pageCount: pageCount, description: description)
     }
 
     public func getPage(comicId: UInt32, pageIndex: UInt32) throws -> DataPage? {
