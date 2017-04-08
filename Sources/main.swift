@@ -44,6 +44,7 @@ class SiteMain {
 
             let result = self.pageHandler(session, request, response)
 
+            response.addHeader(.contentSecurityPolicy, value: "default-src 'self'; img-src * data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src * wss:;")
             switch result.status {
             case .OK(view: let view, data: let data):
                 contxt.templatePath = "\(templatesDir)/\(view)"
