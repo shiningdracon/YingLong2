@@ -1,12 +1,15 @@
 import Foundation
 
+//TODO: Lambdas is unportable for other web frameworks.
+import PerfectMustache
+
 public struct SiteI18n {
     public enum Locale{
         case zh_CN
         case zh_TW
     }
 
-    static let zh_cn: [String: String] = [
+    static let zh_cn: [String: Any] = [
         "Title": "标题",
         "Author": "作者",
         "Description": "描述",
@@ -18,6 +21,9 @@ public struct SiteI18n {
         "Save": "保存",
         "Previous page": "上一页",
         "Next page": "下一页",
+        "Page(index)": { (tag: String, context: MustacheEvaluationContext) in return ("第 \(context.getValue(named: "index") ?? "") 页") },
+        "Newest": "最新更新",
+        "All": "全部",
         "title_placeholder": "添加标题",
         "optional_title_placeholder": "（可选）添加标题",
         "author_placeholder": "添加作者",
@@ -25,7 +31,7 @@ public struct SiteI18n {
         "optional_description_placeholder": "（可选）添加描述"
     ]
 
-    static let zh_tw: [String: String] = [
+    static let zh_tw: [String: Any] = [
         "Title": "標題",
         "Author": "作者",
         "Description": "描述",
@@ -37,6 +43,9 @@ public struct SiteI18n {
         "Save": "保存",
         "Previous page": "上一頁",
         "Next page": "下一頁",
+        "Page(index)": { (tag: String, context: MustacheEvaluationContext) in return ("第 \(context.getValue(named: "index") ?? "") 頁") },
+        "Newest": "最新更新",
+        "All": "全部",
         "title_placeholder": "添加標題",
         "optional_title_placeholder": "（可選）添加標題",
         "author_placeholder": "添加作者",
@@ -44,7 +53,7 @@ public struct SiteI18n {
         "optional_description_placeholder": "（可選）添加描述"
     ]
 
-    static func getI18n(_ locale: Locale?) -> [String: String] {
+    static func getI18n(_ locale: Locale?) -> [String: Any] {
         switch locale ?? .zh_CN {
         case .zh_CN:
             return zh_cn

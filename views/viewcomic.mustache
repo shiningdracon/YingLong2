@@ -1,6 +1,20 @@
 {{> header}}
 		<h1>{{title}}</h1>
-		<address class="author">{{author}}</address>
+		<address class="author">{{#lang}}{{Author}}{{/lang}}: {{author}}</address>
 		<summary>{{description}}</summary>
-		<a href="/comic/{{comic_id}}/page/add" rel="nofollow">{{#lang}}{{Add page}}{{/lang}}</a>
+		<p class="text-right"><a href="/comic/{{comic_id}}/page/add" rel="nofollow" class="btn btn-default">{{#lang}}{{Add page}}{{/lang}}</a></p>
+		<div>
+			<h5>{{#lang}}{{Newest}}{{/lang}}</h5>
+			<ul class="newest_list list-inline">
+				{{#newest_list}}
+				<li><a href="/comic/{{comic_id}}/page/{{index}}" class="comic-list-item btn btn-default">{{#lang}}{{Page(index)}}{{/lang}}</a></li>
+				{{/newest_list}}
+			</ul>
+			<h5>{{#lang}}{{All}}{{/lang}}</h5>
+			<ul class="page_list list-inline">
+				{{#page_list}}
+				<li><a href="/comic/{{comic_id}}/page/{{index}}" class="comic-list-item btn btn-default">{{#lang}}{{Page(index)}}{{/lang}}</a></li>
+				{{/page_list}}
+			</ul>
+		</div>
 {{> footer}}

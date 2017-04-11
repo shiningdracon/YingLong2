@@ -188,7 +188,7 @@ public final class SiteController {
         do {
             var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
             data["page_title"] = "" //TODO:
-            if let comicList = try self.dataManager.getComicList(offset: offset, limit: display) {
+            if let comicList = try self.dataManager.getComicList(offset: offset, limit: display), comicList.count > 0 {
                 var dataComicList: Array<[String: Any]> = []
                 for comic in comicList {
                     var dataComic: [String: Any] = [:]
@@ -219,6 +219,22 @@ public final class SiteController {
                 data["poster"] = comic.poster
                 data["description"] = i18n(comic.description, locale: session?.locale)
                 data["page_count"] = comic.pageCount
+                if let pageList = try self.dataManager.getPageListOfComic(id: comicId), pageList.count > 0 {
+                    var dataPageList: Array<[String: Any]> = []
+                    for page in pageList {
+                        var dataPage: [String: Any] = [:]
+                        dataPage["index"] = page.index
+                        dataPage["title"] = page.title
+                        dataPageList.append(dataPage)
+                    }
+                    data["page_list"] = dataPageList
+
+                    var sliceOffset = dataPageList.count - 5
+                    if sliceOffset < 0 {
+                        sliceOffset = 0
+                    }
+                    data["newest_list"] = dataPageList[sliceOffset..<dataPageList.count].reversed() as Array
+                }
                 return SiteResponse(status: .OK(view: "viewcomic.mustache", data: data), session: session)
             }
             return SiteResponse(status: .NotFound, session: session)
