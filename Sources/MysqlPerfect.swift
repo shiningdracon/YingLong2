@@ -7,6 +7,9 @@ class MySQLPerfect: DatabaseProtocol {
 
     init?(host hst: String, user: String, passwd: String, dbname: String) {
         dataMysql = MySQL()
+        guard dataMysql.setOption(.MYSQL_SET_CHARSET_NAME, "utf8") else {
+            return nil
+        }
         guard dataMysql.connect(host: hst, user: user, password: passwd ) else {
             return nil
         }
