@@ -1,4 +1,5 @@
 import Foundation
+import BBCode
 
 protocol UtilitiesProtocol {
     func ChineseConvertS2T(_ s: String) -> String
@@ -29,10 +30,12 @@ public struct SiteResponse {
 public final class SiteController {
     let utilities: UtilitiesProtocol
     let dataManager: DataManager
+    let bbcode: BBCode
 
     init(util: UtilitiesProtocol, data: DataManager) {
         self.utilities = util
         self.dataManager = data
+        self.bbcode = BBCode()
     }
 
     func i18n(_ ori: String, locale: SiteI18n.Locale?) -> String {
@@ -83,7 +86,7 @@ public final class SiteController {
                         jumpArray[Int(pageIndex-1)]["selected"] = "selected"
                         data["quick_jump"] = jumpArray
                         data["title"] = i18n(page.title, locale: session?.locale)
-                        data["description"] = i18n(page.description, locale: session?.locale)
+                        data["description"] = i18n(try bbcode.parse(bbcode: page.description), locale: session?.locale)
                         data["content"] = i18n(page.content, locale: session?.locale)
                         return SiteResponse(status: .OK(view: "viewpage.mustache", data: data), session: session)
                     }
@@ -193,9 +196,9 @@ public final class SiteController {
                 for comic in comicList {
                     var dataComic: [String: Any] = [:]
                     dataComic["id"] = comic.id
-                    dataComic["title"] = comic.title
+                    dataComic["title"] = i18n(comic.title, locale: session?.locale)
                     dataComic["poster"] = comic.poster
-                    dataComic["description"] = comic.description
+                    dataComic["description"] = i18n(try bbcode.parse(bbcode: comic.description), locale: session?.locale)
                     dataComic["page_count"] = comic.pageCount
                     dataComicList.append(dataComic)
                 }
@@ -203,6 +206,12 @@ public final class SiteController {
             }
             // if comic_list is not set, means no comic right now
             return SiteResponse(status: .OK(view: "viewcomiclist.mustache", data: data), session: session)
+        } catch BBCodeError.evaluationError(let msg) {
+            return SiteResponse(status: .Error(message: "BBCode evaluation error: " + msg), session: session)
+        } catch BBCodeError.syntaxError(let msg) {
+            return SiteResponse(status: .Error(message: "BBCode syntax error: " + msg), session: session)
+        } catch BBCodeError.internalError(let msg) {
+            return SiteResponse(status: .Error(message: "BBCode internal error: " + msg), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "DB error"), session: session)
         }
@@ -217,7 +226,7 @@ public final class SiteController {
                 data["title"] = i18n(comic.title, locale: session?.locale)
                 data["author"] = comic.author
                 data["poster"] = comic.poster
-                data["description"] = i18n(comic.description, locale: session?.locale)
+                data["description"] = i18n(try bbcode.parse(bbcode: comic.description), locale: session?.locale)
                 data["page_count"] = comic.pageCount
                 if let pageList = try self.dataManager.getPageListOfComic(id: comicId), pageList.count > 0 {
                     var dataPageList: Array<[String: Any]> = []
@@ -238,6 +247,12 @@ public final class SiteController {
                 return SiteResponse(status: .OK(view: "viewcomic.mustache", data: data), session: session)
             }
             return SiteResponse(status: .NotFound, session: session)
+        } catch BBCodeError.evaluationError(let msg) {
+            return SiteResponse(status: .Error(message: "BBCode evaluation error: " + msg), session: session)
+        } catch BBCodeError.syntaxError(let msg) {
+            return SiteResponse(status: .Error(message: "BBCode syntax error: " + msg), session: session)
+        } catch BBCodeError.internalError(let msg) {
+            return SiteResponse(status: .Error(message: "BBCode internal error: " + msg), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "DB error"), session: session)
         }
