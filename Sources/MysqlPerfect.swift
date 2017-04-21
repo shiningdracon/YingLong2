@@ -10,6 +10,9 @@ class MySQLPerfect: DatabaseProtocol {
         guard dataMysql.setOption(.MYSQL_SET_CHARSET_NAME, "utf8") else {
             return nil
         }
+        guard dataMysql.setOption(.MYSQL_OPT_RECONNECT, true) else {
+            return nil
+        }
         guard dataMysql.connect(host: hst, user: user, password: passwd ) else {
             return nil
         }
