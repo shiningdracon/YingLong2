@@ -34,6 +34,7 @@ body {
 				<option value="{{index}}" {{selected}}>{{index}}</option>
 				{{/quick_jump}}
 			</select>
+			<span><a href="/comic/{{comic_id}}/page/{{page_index}}/edit">{{#lang}}{{Edit}}{{/lang}}</a></span>
 		</div>
 		<textarea id="json" readonly style="display: none">{{content}}</textarea>
 		<script src="/view.js"></script>
