@@ -272,6 +272,38 @@ public final class SiteController {
         }
     }
 
+    public func editComic(session: SessionInfo?, comicId: UInt32) -> SiteResponse {
+        do {
+            if let comic = try self.dataManager.getComic(id: comicId) {
+                var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
+                data["comic_id"] = comic.id
+                data["title"] = i18n(comic.title, locale: session?.locale)
+                data["author"] = comic.author
+                data["poster"] = comic.poster
+                data["description"] = i18n(comic.description, locale: session?.locale)
+
+                return SiteResponse(status: .OK(view: "editcomic.mustache", data: data), session: session)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: error.localizedDescription), session: session)
+        }
+    }
+
+    public func postUpdateComic(session: SessionInfo?, comicId: UInt32, title: String, author: String, description: String) -> SiteResponse {
+        do {
+            guard let comic = try self.dataManager.getComic(id: comicId) else {
+                return SiteResponse(status: .NotFound, session: session)
+            }
+            guard self.dataManager.updateComic(id: comicId, title: comic.title, author: comic.author, pageCount: comic.pageCount, description: comic.description) else {
+                return SiteResponse(status: .Error(message: "DB failed"), session: session)
+            }
+            return SiteResponse(status: .Redirect(location: "/comic/\(comicId)"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        }
+    }
+
     public func toolAddFile(pageId: UInt32, filename: String, localname: String, mimetype: String, size: UInt32) throws {
         try self.dataManager.addFile(pageId: pageId, filename: filename, localname: localname, mimetype: mimetype, size: size)
     }

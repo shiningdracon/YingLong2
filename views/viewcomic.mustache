@@ -2,7 +2,10 @@
 		<h1>{{title}}</h1>
 		<address class="author">{{#lang}}{{Author}}{{/lang}}: {{author}}</address>
 		<summary>{{{description}}}</summary>
-		<p class="text-right"><a href="/comic/{{comic_id}}/page/add" rel="nofollow" class="btn btn-default">{{#lang}}{{Add page}}{{/lang}}</a></p>
+		<div class="btn-toolbar pull-right">
+			<a href="/comic/{{comic_id}}/edit" rel="nofollow" class="btn btn-default">{{#lang}}{{Edit}}{{/lang}}</a>
+			<a href="/comic/{{comic_id}}/page/add" rel="nofollow" class="btn btn-default">{{#lang}}{{Add page}}{{/lang}}</a>
+		</div>
 		<div>
 			<h5>{{#lang}}{{Newest}}{{/lang}}</h5>
 			<ul class="newest_list list-inline">

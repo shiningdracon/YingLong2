@@ -1,0 +1,20 @@
+{{> header}}
+    <h1>{{#lang}}{{Edit}}{{/lang}}《{{title}}》</h1>
+    <div class="col-md-6">
+      <form action="/comic/add" method="post">
+        <div class="form-group">
+          <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
+          <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{title_placeholder}}{{/lang}}" value="{{title}}" />
+        </div>
+        <div class="form-group">
+          <label for="author">{{#lang}}{{Author}}{{/lang}}</label>
+          <input class="form-control" id="author" type="text" name="author" placeholder="{{#lang}}{{author_placeholder}}{{/lang}}" value="{{author}}" />
+        </div>
+        <div class="form-group">
+          <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
+          <textarea class="form-control" rows="3" id="description" name="description" placeholder="{{#lang}}{{description_placeholder}}{{/lang}}">{{description}}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">{{#lang}}{{Submit}}{{/lang}}</button>
+      </form>
+    </div>
+{{> footer}}

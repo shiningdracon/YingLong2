@@ -183,6 +183,23 @@ class SiteMain {
             return self.controller.postAddComic(session: session, title: title, author: author, description: description)
         })
 
+        addRoute(method: .get, uri: "/comic/{cid}/edit", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+                return self.controller.editComic(session: session, comicId: cid)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+
+        addRoute(method: .post, uri: "/comic/{cid}/edit", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+                let title = request.param(name: "title") ?? ""
+                let author = request.param(name: "author") ?? ""
+                let description = request.param(name: "description") ?? ""
+                return self.controller.postUpdateComic(session: session, comicId: cid, title: title, author: author, description: description)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+
         addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
