@@ -29,7 +29,14 @@ public struct SiteI18n {
         "optional_title_placeholder": "（可选）添加标题",
         "author_placeholder": "添加作者",
         "description_placeholder": "添加描述",
-        "optional_description_placeholder": "（可选）添加描述"
+        "optional_description_placeholder": "（可选）添加描述",
+
+        // error messages
+        "Unclosed tag": "未闭合的标签",
+        "Unfinished opening tag": "未完成的起始标签",
+        "Unfinished attr": "未完成的标签属性",
+        "Unparied tag": "未配对的标签",
+        "Unfinished closing tag": "未完成的结尾标签",
     ]
 
     static let zh_tw: [String: Any] = [
@@ -52,7 +59,14 @@ public struct SiteI18n {
         "optional_title_placeholder": "（可選）添加標題",
         "author_placeholder": "添加作者",
         "description_placeholder": "添加描述",
-        "optional_description_placeholder": "（可選）添加描述"
+        "optional_description_placeholder": "（可選）添加描述",
+
+        // error messages
+        "Unclosed tag": "未閉合的標籤",
+        "Unfinished opening tag": "未完成的起始標籤",
+        "Unfinished attr": "未完成的標籤屬性",
+        "Unparied tag": "未配對的標籤",
+        "Unfinished closing tag": "未完成的結尾標籤",
     ]
 
     static func getI18n(_ locale: Locale?) -> [String: Any] {
@@ -61,6 +75,15 @@ public struct SiteI18n {
             return zh_cn
         case .zh_TW:
             return zh_tw
+        }
+    }
+
+    static func getI18n(_ locale: Locale?, _ key: String) -> String? {
+        switch locale ?? .zh_CN {
+        case .zh_CN:
+            return zh_cn[key] as? String
+        case .zh_TW:
+            return zh_tw[key] as? String
         }
     }
 }

@@ -86,7 +86,7 @@ public final class SiteController {
                         jumpArray[Int(pageIndex-1)]["selected"] = "selected"
                         data["quick_jump"] = jumpArray
                         data["title"] = i18n(page.title, locale: session?.locale)
-                        data["description"] = i18n(try bbcode.parse(bbcode: page.description), locale: session?.locale)
+                        data["description"] = i18n(try bbcode.parse(bbcode: page.description, i18n: SiteI18n.getI18n(session?.locale)), locale: session?.locale)
                         data["content"] = i18n(page.content, locale: session?.locale)
                         return SiteResponse(status: .OK(view: "viewpage.mustache", data: data), session: session)
                     }
@@ -198,7 +198,7 @@ public final class SiteController {
                     dataComic["id"] = comic.id
                     dataComic["title"] = i18n(comic.title, locale: session?.locale)
                     dataComic["poster"] = comic.poster
-                    dataComic["description"] = i18n(try bbcode.parse(bbcode: comic.description), locale: session?.locale)
+                    dataComic["description"] = i18n(try bbcode.parse(bbcode: comic.description, i18n: SiteI18n.getI18n(session?.locale)), locale: session?.locale)
                     dataComic["page_count"] = comic.pageCount
                     dataComicList.append(dataComic)
                 }
@@ -213,7 +213,7 @@ public final class SiteController {
         } catch BBCodeError.internalError(let msg) {
             return SiteResponse(status: .Error(message: "BBCode internal error: " + msg), session: session)
         } catch {
-            return SiteResponse(status: .Error(message: "DB error"), session: session)
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
     }
 
@@ -226,7 +226,7 @@ public final class SiteController {
                 data["title"] = i18n(comic.title, locale: session?.locale)
                 data["author"] = comic.author
                 data["poster"] = comic.poster
-                data["description"] = i18n(try bbcode.parse(bbcode: comic.description), locale: session?.locale)
+                data["description"] = i18n(try bbcode.parse(bbcode: comic.description, i18n: SiteI18n.getI18n(session?.locale)), locale: session?.locale)
                 data["page_count"] = comic.pageCount
                 if let pageList = try self.dataManager.getPageListOfComic(id: comicId), pageList.count > 0 {
                     var dataPageList: Array<[String: Any]> = []
@@ -254,7 +254,7 @@ public final class SiteController {
         } catch BBCodeError.internalError(let msg) {
             return SiteResponse(status: .Error(message: "BBCode internal error: " + msg), session: session)
         } catch {
-            return SiteResponse(status: .Error(message: "DB error"), session: session)
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
     }
 
@@ -265,8 +265,16 @@ public final class SiteController {
 
     public func postAddComic(session: SessionInfo?, title: String, author: String, description: String) -> SiteResponse {
         do {
+            _ = try self.bbcode.parse(bbcode: description, i18n: SiteI18n.getI18n(session?.locale))
             let comicId = try self.dataManager.addComic(title: title, author: author, poster: "guest", description: description)
             return SiteResponse(status: .Redirect(location: "/comic/\(comicId)"), session: session)
+        } catch let error as BBCodeError {
+            var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
+            data["title"] = title
+            data["author"] = author
+            data["description"] = description
+            data["error"] = error.description
+            return SiteResponse(status: .OK(view: "addcomic.mustache", data: data), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
@@ -295,10 +303,18 @@ public final class SiteController {
             guard let comic = try self.dataManager.getComic(id: comicId) else {
                 return SiteResponse(status: .NotFound, session: session)
             }
+            _ = try self.bbcode.parse(bbcode: description, i18n: SiteI18n.getI18n(session?.locale))
             guard self.dataManager.updateComic(id: comicId, title: comic.title, author: comic.author, pageCount: comic.pageCount, description: comic.description) else {
                 return SiteResponse(status: .Error(message: "DB failed"), session: session)
             }
             return SiteResponse(status: .Redirect(location: "/comic/\(comicId)"), session: session)
+        } catch let error as BBCodeError {
+            var data: [String: Any] = ["lang": SiteI18n.getI18n(session?.locale)]
+            data["title"] = title
+            data["author"] = author
+            data["description"] = description
+            data["error"] = error.description
+            return SiteResponse(status: .OK(view: "editcomic.mustache", data: data), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
