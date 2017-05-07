@@ -94,7 +94,7 @@ public final class SiteController {
             }
             return SiteResponse(status: .NotFound, session: session)
         } catch {
-            return SiteResponse(status: .Error(message: error.localizedDescription), session: session)
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
     }
 
@@ -115,7 +115,7 @@ public final class SiteController {
             }
             return SiteResponse(status: .NotFound, session: session)
         } catch {
-            return SiteResponse(status: .Error(message: error.localizedDescription), session: session)
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
     }
 
@@ -294,7 +294,7 @@ public final class SiteController {
             }
             return SiteResponse(status: .NotFound, session: session)
         } catch {
-            return SiteResponse(status: .Error(message: error.localizedDescription), session: session)
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
     }
 

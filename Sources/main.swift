@@ -76,10 +76,12 @@ class SiteMain {
                 contxt.extendValues(with: data)
                 do {
                     try contxt.requestCompleted(withCollector: collector)
+                    LogFile.info("[\(request.remoteAddress.host)] URI: \(request.uri)")
                 } catch {
                     response.status = .internalServerError
                     response.appendBody(string: "\(error)")
                     response.completed()
+                    LogFile.info("[\(request.remoteAddress.host)] \(error)")
                 }
             case .Redirect(location: let location):
                 response.status = .found
@@ -89,12 +91,12 @@ class SiteMain {
                 response.status = .notFound
                 response.appendBody(string: "Not found")
                 response.completed()
-                LogFile.warning("Not found: \(request.uri)")
+                LogFile.warning("[\(request.remoteAddress.host)] Not found: \(request.uri)")
             case .Error(message: let message):
                 response.status = .internalServerError
                 response.appendBody(string: "Service error")
                 response.completed()
-                LogFile.error("URI: \(request.uri), error: \(message)")
+                LogFile.error("[\(request.remoteAddress.host)] URI: \(request.uri), error: \(message)")
             }
         }
     }
