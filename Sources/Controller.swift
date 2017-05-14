@@ -304,7 +304,7 @@ public final class SiteController {
                 return SiteResponse(status: .NotFound, session: session)
             }
             _ = try self.bbcode.parse(bbcode: description, i18n: SiteI18n.getI18n(session?.locale))
-            guard self.dataManager.updateComic(id: comicId, title: comic.title, author: comic.author, pageCount: comic.pageCount, description: comic.description) else {
+            guard self.dataManager.updateComic(id: comicId, title: title, author: author, pageCount: comic.pageCount, description: description) else {
                 return SiteResponse(status: .Error(message: "DB failed"), session: session)
             }
             return SiteResponse(status: .Redirect(location: "/comic/\(comicId)"), session: session)

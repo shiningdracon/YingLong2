@@ -1,7 +1,7 @@
 {{> header}}
     <h1>{{#lang}}{{Edit}}{{/lang}}《{{title}}》</h1>
     <div class="col-md-6">
-      <form action="/comic/add" method="post">
+      <form action="/comic/{{comic_id}}/edit" method="post">
         <div class="form-group">
           <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
           <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{title_placeholder}}{{/lang}}" value="{{title}}" />
