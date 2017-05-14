@@ -109,7 +109,7 @@ public final class SiteController {
                 data["comic_id"] = comicId
                 data["page_index"] = pageIndex
                 data["title"] = page.title
-                data["description"] = page.description
+                data["description"] = page.description.stringByEncodingHTML_NoConvertCRLF
                 data["content"] = page.content
                 return SiteResponse(status: .OK(view: "editpage.mustache", data: data), session: session)
             }
@@ -288,7 +288,7 @@ public final class SiteController {
                 data["title"] = i18n(comic.title, locale: session?.locale)
                 data["author"] = comic.author
                 data["poster"] = comic.poster
-                data["description"] = i18n(comic.description, locale: session?.locale)
+                data["description"] = comic.description.stringByEncodingHTML_NoConvertCRLF
 
                 return SiteResponse(status: .OK(view: "editcomic.mustache", data: data), session: session)
             }
@@ -337,3 +337,34 @@ extension Dictionary {
     }
 }
 
+extension String {
+    /// Returns the String with all special HTML characters encoded.
+    public var stringByEncodingHTML_NoConvertCRLF: String {
+        var ret = ""
+        var g = self.unicodeScalars.makeIterator()
+        while let c = g.next() {
+            if c < UnicodeScalar(0x0009) {
+                if let scale = UnicodeScalar(0x0030 + UInt32(c)) {
+                    ret.append("&#x")
+                    ret.append(String(Character(scale)))
+                    ret.append(";")
+                }
+            } else if c == UnicodeScalar(0x0022) {
+                ret.append("&quot;")
+            } else if c == UnicodeScalar(0x0026) {
+                ret.append("&amp;")
+            } else if c == UnicodeScalar(0x0027) {
+                ret.append("&#39;")
+            } else if c == UnicodeScalar(0x003C) {
+                ret.append("&lt;")
+            } else if c == UnicodeScalar(0x003E) {
+                ret.append("&gt;")
+            } else if c > UnicodeScalar(126) {
+                ret.append("&#\(UInt32(c));")
+            } else {
+                ret.append(String(Character(c)))
+            }
+        }
+        return ret
+    }
+}
