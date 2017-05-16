@@ -26,7 +26,7 @@ class SiteMain {
         var uploadSizeLimit: Int
     }
 
-    typealias PageHandler = (SessionInfo?, HTTPRequest, HTTPResponse) -> SiteResponse
+    typealias PageHandler = (SiteController, SessionInfo?, HTTPRequest, HTTPResponse) -> SiteResponse
 
     static func parseAcceptLanguage(_ value: String) -> SiteI18n.Locale {
         let components = value.components(separatedBy: ",")
@@ -53,9 +53,13 @@ class SiteMain {
 
     struct CommonHandler: MustachePageHandler {
         var pageHandler: PageHandler
+        var databaseConfig: DatabaseConfig
+        var utilities: UtilitiesPerfect
 
-        init(pageHandler: @escaping PageHandler) {
+        init(pageHandler: @escaping PageHandler, util: UtilitiesPerfect, databaseConfig: DatabaseConfig) {
             self.pageHandler = pageHandler
+            self.databaseConfig = databaseConfig
+            self.utilities = util
         }
 
         func extendValuesForResponse(context contxt: MustacheWebEvaluationContext, collector: MustacheEvaluationOutputCollector) {
@@ -67,7 +71,14 @@ class SiteMain {
 
             let session = SessionInfo(remoteAddress: request.remoteAddress.host, locale: locale)
 
-            let result = self.pageHandler(session, request, response)
+            guard let mysql = MySQLPerfect(host: databaseConfig.host, user: databaseConfig.user, passwd: databaseConfig.password, dbname: databaseConfig.dbname) else {
+                fatalError("Database init failed")
+            }
+            let dbStorage = DatabaseStorage(database: mysql, prefix: databaseConfig.tablePrefix)
+            let data = DataManager(dbStorage: dbStorage, memoryStorage: MemoryStorage())
+            let controller = SiteController(util: utilities, data: data)
+
+            let result = self.pageHandler(controller, session, request, response)
 
             response.addHeader(.contentSecurityPolicy, value: "default-src 'self'; img-src * data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src * wss:;")
             switch result.status {
@@ -105,7 +116,7 @@ class SiteMain {
     var serverConfig: ServerConfig
     var siteConfig: SiteConfig
     var routes: Routes
-    var controller: SiteController
+    var utilities: UtilitiesPerfect
 
     init() {
         LogFile.location = "./server.log"
@@ -145,78 +156,73 @@ class SiteMain {
             fatalError("Load config failed")
         }
 
-        guard let mysql = MySQLPerfect(host: databaseConfig.host, user: databaseConfig.user, passwd: databaseConfig.password, dbname: databaseConfig.dbname) else {
-            fatalError("Database init failed")
-        }
-        let dbStorage = DatabaseStorage(database: mysql, prefix: databaseConfig.tablePrefix)
-        let data = DataManager(dbStorage: dbStorage, memoryStorage: MemoryStorage())
         guard let utilities = UtilitiesPerfect() else {
             fatalError("Utilities init failed")
         }
-        self.controller = SiteController(util: utilities, data: data)
+        self.utilities = utilities
     }
 
     func addRoute(method: HTTPMethod, uri: String, handler: @escaping PageHandler) {
         routes.add(method: method, uri: uri, handler: { request, response in
-            mustacheRequest(request: request, response: response, handler: CommonHandler(pageHandler: handler), templatePath: "")
+            mustacheRequest(request: request, response: response, handler: CommonHandler(pageHandler: handler, util: self.utilities, databaseConfig: self.databaseConfig), templatePath: "")
         })
     }
 
     func start() {
-        addRoute(method: .get, uri: "/", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
-            return self.controller.main(session: session, page: 1)
+        addRoute(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+            return controller.main(session: session, page: 1)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
-                return self.controller.viewComic(session: session, comicId: cid)
+                return controller.viewComic(session: session, comicId: cid)
             } else if request.urlVariables["cid"] == "add" {
-                return self.controller.addComic(session: session)
+                return controller.addComic(session: session)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/add", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/add", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             let title = request.param(name: "title") ?? ""
             let author = request.param(name: "author") ?? ""
             let description = request.param(name: "description") ?? ""
-            return self.controller.postAddComic(session: session, title: title, author: author, description: description)
+            return controller.postAddComic(session: session, title: title, author: author, description: description)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/edit", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
-                return self.controller.editComic(session: session, comicId: cid)
+                return controller.editComic(session: session, comicId: cid)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/edit", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 let title = request.param(name: "title") ?? ""
                 let author = request.param(name: "author") ?? ""
                 let description = request.param(name: "description") ?? ""
-                return self.controller.postUpdateComic(session: session, comicId: cid, title: title, author: author, description: description)
+                return controller.postUpdateComic(session: session, comicId: cid, title: title, author: author, description: description)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
-                    return self.controller.viewPage(session: session, comicId: cid, pageIndex: pidx)
+                    return controller.viewPage(session: session, comicId: cid, pageIndex: pidx)
                 } else if request.urlVariables["pidx"] == "add" {
-                    return self.controller.addPage(session: session, comicId: cid)
+                    return controller.addPage(session: session, comicId: cid)
                 } else if request.urlVariables["pidx"] == "end" {
-                    return self.controller.viewLastPage(session: session, comicId: cid)
+                    return controller.viewLastPage(session: session, comicId: cid)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/page/add", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/{cid}/page/add", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let uploads = request.postFileUploads , uploads.count > 0 {
@@ -239,23 +245,23 @@ class SiteMain {
                                 fileExtension = ""
                             }
                             guard fileExtension == "png" || fileExtension == "jpg" || fileExtension == "jpeg" else {
-                                return self.controller.error(session: session, message: "File type")
+                                return controller.error(session: session, message: "File type")
                             }
 
                             // Validate file size
                             guard upload.fileSize > 0 && upload.fileSize < self.siteConfig.uploadSizeLimit else {
-                                return self.controller.error(session: session, message: "File size")
+                                return controller.error(session: session, message: "File size")
                             }
 
                             // Validate image
                             guard let image = Image(url: URL(fileURLWithPath: upload.tmpFileName)) else {
-                                return self.controller.error(session: session, message: "Not valid file")
+                                return controller.error(session: session, message: "Not valid file")
                             }
 
                             let localname = "\(UUID().string).\(fileExtension)"
-                            return self.controller.postAddPage(session: session, comicId: cid, title: title, description: description, imgWebURL: "/images/"+localname, onSeccuss: { (pageId: UInt32) in
+                            return controller.postAddPage(session: session, comicId: cid, title: title, description: description, imgWebURL: "/images/"+localname, onSeccuss: { (pageId: UInt32) in
 
-                                try self.controller.toolAddFile(pageId: pageId, filename: upload.fileName, localname: localname, mimetype: upload.contentType, size: UInt32(upload.fileSize))
+                                try controller.toolAddFile(pageId: pageId, filename: upload.fileName, localname: localname, mimetype: upload.contentType, size: UInt32(upload.fileSize))
                                 guard image.write(to: URL(fileURLWithPath: "webroot/images/"+localname), quality: 75) else {
                                     throw WebFrameworkError.RuntimeError("Failed write image file")
                                 }
@@ -263,31 +269,31 @@ class SiteMain {
                         }
                     }
                 }
-                return self.controller.error(session: session, message: "No file uploaded")
+                return controller.error(session: session, message: "No file uploaded")
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
-                    return self.controller.editPage(session: session, comicId: cid, pageIndex: pidx)
+                    return controller.editPage(session: session, comicId: cid, pageIndex: pidx)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
                     if let content = request.param(name: "content") {
                         let title = request.param(name: "title") ?? ""
                         let description = request.param(name: "description") ?? ""
-                        return self.controller.postUpdatePage(session: session, comicId: cid, pageIndex: pidx, title: title, description: description, content: content)
+                        return controller.postUpdatePage(session: session, comicId: cid, pageIndex: pidx, title: title, description: description, content: content)
                     } else {
-                        return self.controller.error(session: session, message: "Empty content")
+                        return controller.error(session: session, message: "Empty content")
                     }
                 }
             }

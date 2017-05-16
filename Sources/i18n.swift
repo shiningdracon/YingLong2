@@ -78,7 +78,7 @@ public struct SiteI18n {
         }
     }
 
-    static func getI18n(_ locale: Locale?, _ key: String) -> String? {
+    static func getI18n(_ locale: Locale?, key: String) -> String? {
         switch locale ?? .zh_CN {
         case .zh_CN:
             return zh_cn[key] as? String
