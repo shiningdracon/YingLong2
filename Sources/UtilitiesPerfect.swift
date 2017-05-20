@@ -1,8 +1,10 @@
 import OpenCC
+import BBCode
 
 class UtilitiesPerfect: UtilitiesProtocol {
-    var openccS2T: OpenCC
-    var openccT2S: OpenCC
+    let openccS2T: OpenCC
+    let openccT2S: OpenCC
+    let bbcode: BBCode
 
     init?() {
         guard let s2t = OpenCC(configFile: "s2t.json") else {
@@ -13,6 +15,8 @@ class UtilitiesPerfect: UtilitiesProtocol {
         }
         self.openccS2T = s2t
         self.openccT2S = t2s
+
+        self.bbcode = BBCode()
     }
 
     func ChineseConvertS2T(_ s: String) -> String {
@@ -28,6 +32,28 @@ class UtilitiesPerfect: UtilitiesProtocol {
             return s
         } else {
             return ""
+        }
+    }
+
+    func BBCode2HTML(bbcode: String, local: i18nLocale) throws -> String {
+        do {
+            return try self.bbcode.parse(bbcode: bbcode)
+        } catch let error as BBCodeError {
+            let i18nData = BBCodeI18n.instance.getI18n(local)
+            switch error {
+            case .internalError(let detail):
+                throw WebFrameworkError.BBCodeError(detail)
+            case .unclosedTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unclosed tag"] as! String + ": " + detail)
+            case .unfinishedAttr(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unfinished attr"] as! String + ": " + detail)
+            case .unfinishedClosingTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unfinished closing tag"] as! String + ": " + detail)
+            case .unfinishedOpeningTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unfinished opening tag"] as! String + ": " + detail)
+            case .unpairedTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unparied tag"] as! String + ": " + detail)
+            }
         }
     }
 }

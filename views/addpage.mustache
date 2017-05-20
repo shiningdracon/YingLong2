@@ -4,11 +4,16 @@
       <form action="/comic/{{comic_id}}/page/add" method="post" enctype="multipart/form-data">
         <div class="form-group">
           <label for="title">{{#lang}}{{Title}}{{/lang}}</label>
-          <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{optional_title_placeholder}}{{/lang}}" />
+          <input class="form-control" id="title" type="text" name="title" placeholder="{{#lang}}{{optional_title_placeholder}}{{/lang}}" value="{{title}}" />
         </div>
         <div class="form-group">
           <label for="description">{{#lang}}{{Description}}{{/lang}}</label>
-          <textarea class="form-control" rows="3" id="description" name="description" placeholder="{{#lang}}{{optional_description_placeholder}}{{/lang}}"></textarea>
+          {{#error}}
+          <div class="alert alert-danger" role="alert">
+            {{error}}
+          </div>
+          {{/error}}
+          <textarea class="form-control" rows="3" id="description" name="description" placeholder="{{#lang}}{{optional_description_placeholder}}{{/lang}}">{{{description}}}</textarea>
         </div>
         <div class="form-group">
           <label for="file">{{#lang}}{{File}}{{/lang}}</label>

@@ -26,9 +26,9 @@ class SiteMain {
         var uploadSizeLimit: Int
     }
 
-    typealias PageHandler = (SiteController, SessionInfo?, HTTPRequest, HTTPResponse) -> SiteResponse
+    typealias PageHandler = (SiteController, SessionInfo, HTTPRequest, HTTPResponse) -> SiteResponse
 
-    static func parseAcceptLanguage(_ value: String) -> SiteI18n.Locale {
+    static func parseAcceptLanguage(_ value: String) -> i18nLocale {
         let components = value.components(separatedBy: ",")
         for language in components {
             let params = language.components(separatedBy: CharacterSet(charactersIn: "-_"))
@@ -67,12 +67,13 @@ class SiteMain {
             let request = contxt.webRequest
             let response = contxt.webResponse
             let templatesDir = "./views"
-            let locale: SiteI18n.Locale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
+            let locale: i18nLocale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
 
             let session = SessionInfo(remoteAddress: request.remoteAddress.host, locale: locale)
 
             guard let mysql = MySQLPerfect(host: databaseConfig.host, user: databaseConfig.user, passwd: databaseConfig.password, dbname: databaseConfig.dbname) else {
-                fatalError("Database init failed")
+                LogFile.error("Database init failed")
+                return
             }
             let dbStorage = DatabaseStorage(database: mysql, prefix: databaseConfig.tablePrefix)
             let data = DataManager(dbStorage: dbStorage, memoryStorage: MemoryStorage())
@@ -169,11 +170,11 @@ class SiteMain {
     }
 
     func start() {
-        addRoute(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             return controller.main(session: session, page: 1)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 return controller.viewComic(session: session, comicId: cid)
@@ -183,7 +184,7 @@ class SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/add", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             let title = request.param(name: "title") ?? ""
             let author = request.param(name: "author") ?? ""
@@ -191,14 +192,14 @@ class SiteMain {
             return controller.postAddComic(session: session, title: title, author: author, description: description)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 return controller.editComic(session: session, comicId: cid)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 let title = request.param(name: "title") ?? ""
                 let author = request.param(name: "author") ?? ""
@@ -208,7 +209,7 @@ class SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
@@ -222,7 +223,7 @@ class SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/page/add", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/{cid}/page/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let uploads = request.postFileUploads , uploads.count > 0 {
@@ -274,7 +275,7 @@ class SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
@@ -284,7 +285,7 @@ class SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (controller: SiteController, session: SessionInfo?, request: HTTPRequest, response: HTTPResponse) in
+        addRoute(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
