@@ -14,7 +14,9 @@ protocol DatabaseProtocol {
     func update(statement: String, params: [DatabaseValue]) -> Bool
     func delete(statement: String, params: [DatabaseValue]) -> Bool
     func clear()
-    // TODO: transaction
+    func transactionStart()
+    func transactionCommit()
+    func transactionRollback()
 }
 
 public final class DatabaseStorage {
@@ -24,6 +26,18 @@ public final class DatabaseStorage {
     init(database: DatabaseProtocol, prefix: String) {
         self.db = database
         self.prefix = prefix
+    }
+
+    public func transactionStart() {
+        self.db.transactionStart()
+    }
+
+    public func transactionCommit() {
+        self.db.transactionCommit()
+    }
+
+    public func transactionRollback() {
+        self.db.transactionRollback()
     }
 
     public func getComic(id: UInt32) -> [String: Any]? {

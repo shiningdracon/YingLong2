@@ -104,4 +104,16 @@ class MySQLPerfect: DatabaseProtocol {
         dataMysqlStmt.reset()
         dataMysqlStmt.freeResult()
     }
+
+    func transactionStart() {
+        let _ = dataMysql.query(statement: "START TRANSACTION")
+    }
+
+    func transactionCommit() {
+        let _ = dataMysql.query(statement: "COMMIT")
+    }
+
+    func transactionRollback() {
+        let _ = dataMysql.query(statement: "ROLLBACK")
+    }
 }

@@ -60,6 +60,24 @@ public final class SiteController {
         return dateFormatter.string(from: date)
     }
 
+    func reGenerateJSON(jsonString: String) -> String? {
+        do {
+            if let jsonData = jsonString.data(using: .utf8, allowLossyConversion: false) {
+                if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
+
+                    let jsonDataValidated = try JSONSerialization.data(withJSONObject: jsonDict)
+
+                    if let jsonString = String(data: jsonDataValidated, encoding: .utf8) {
+                        return jsonString
+                    }
+                }
+            }
+            return nil
+        } catch {
+            return nil
+        }
+    }
+
     // handlers
     public func main(session: SessionInfo, page: UInt32) -> SiteResponse {
         let data: [String: Any] = ["lang": ComicI18n.instance.getI18n(session.locale)]
@@ -118,24 +136,6 @@ public final class SiteController {
         }
     }
 
-    private func reGenerateJSON(jsonString: String) -> String? {
-        do {
-            if let jsonData = jsonString.data(using: .utf8, allowLossyConversion: false) {
-                if let jsonDict = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] {
-
-                    let jsonDataValidated = try JSONSerialization.data(withJSONObject: jsonDict)
-
-                    if let jsonString = String(data: jsonDataValidated, encoding: .utf8) {
-                        return jsonString
-                    }
-                }
-            }
-            return nil
-        } catch {
-            return nil
-        }
-    }
-
     public func addPage(session: SessionInfo, comicId: UInt32) -> SiteResponse {
         do {
             guard let _ = try self.dataManager.getComic(id: comicId) else {
@@ -150,7 +150,10 @@ public final class SiteController {
     }
 
     public func postAddPage(session: SessionInfo, comicId: UInt32, title: String, description: String, imgWebURL: String, onSeccuss: ((_ pageId: UInt32) throws -> Void)) -> SiteResponse {
+
         do {
+            self.dataManager.transactionStart()
+
             guard let comic = try self.dataManager.getComic(id: comicId) else {
                 return SiteResponse(status: .NotFound, session: session)
             }
@@ -160,15 +163,20 @@ public final class SiteController {
             let pageId = try self.dataManager.addPage(comicId: comicId, pageIndex: pageIndex, title: title, poster: "guest", description: description, content: "{\"backgroundImage\":{\"type\":\"image\",\"originX\":\"left\",\"originY\":\"top\",\"left\":0,\"top\":0,\"fill\":\"rgb(0,0,0)\",\"stroke\":null,\"strokeWidth\":0,\"strokeDashArray\":null,\"strokeLineCap\":\"butt\",\"strokeLineJoin\":\"miter\",\"strokeMiterLimit\":10,\"scaleX\":1,\"scaleY\":1,\"angle\":0,\"flipX\":false,\"flipY\":false,\"opacity\":1,\"shadow\":null,\"visible\":true,\"clipTo\":null,\"backgroundColor\":\"\",\"fillRule\":\"nonzero\",\"globalCompositeOperation\":\"source-over\",\"transformMatrix\":null,\"skewX\":0,\"skewY\":0,\"crossOrigin\":\"\",\"alignX\":\"none\",\"alignY\":\"none\",\"meetOrSlice\":\"meet\",\"src\":\"\(imgWebURL)\",\"filters\":[]}}")
 
             guard self.dataManager.updateComic(id: comicId, title: comic.title, author: comic.author, pageCount: pageIndex, description: comic.description) else {
+                self.dataManager.transactionRollback()
                 return SiteResponse(status: .Error(message: "DB failed"), session: session)
             }
 
             try onSeccuss(pageId)
 
+            self.dataManager.transactionCommit()
+
             return SiteResponse(status: .Redirect(location: "/comic/\(comicId)/page/\(pageIndex)/edit"), session: session)
         } catch WebFrameworkError.RuntimeError(let msg) {
+            self.dataManager.transactionRollback()
             return SiteResponse(status: .Error(message: msg), session: session)
         } catch WebFrameworkError.BBCodeError(let detail) {
+            self.dataManager.transactionRollback()
             var data: [String: Any] = ["lang": ComicI18n.instance.getI18n(session.locale)]
             data["comic_id"] = comicId
             data["title"] = title
@@ -176,6 +184,7 @@ public final class SiteController {
             data["error"] = detail
             return SiteResponse(status: .OK(view: "addpage.mustache", data: data), session: session)
         } catch {
+            self.dataManager.transactionRollback()
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
         }
     }

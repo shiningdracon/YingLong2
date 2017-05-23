@@ -89,6 +89,18 @@ public final class DataManager {
         self.memoryStorage = memoryStorage
     }
 
+    public func transactionStart() {
+        dbStorage.transactionStart()
+    }
+
+    public func transactionCommit() {
+        dbStorage.transactionCommit()
+    }
+
+    public func transactionRollback() {
+        dbStorage.transactionRollback()
+    }
+
     public func getComic(id: UInt32) throws -> DataComic? {
         guard let args = dbStorage.getComic(id: id) else {
             throw DataError.dbError
