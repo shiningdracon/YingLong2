@@ -1,0 +1,29 @@
+{{> header}}
+
+{{#errors}}
+
+<div id="posterror" class="box">
+	<h2 class="box-title"><span></span></h2>
+	<ul class="error-list">
+    <li><strong>{{description}}</strong></li>
+	</ul>
+</div>
+
+{{/errors}}
+
+<div class="box">
+	<h2 class="box-title"><span>{{#lang}}{{Login}}{{/lang}}</span></h2>
+	<form class="form-center" id="login" method="post" action="login" onsubmit="return process_form(this)">
+		<input type="hidden" name="form_sent" value="1" />
+		<input type="hidden" name="redirect_url" value="{{redirect_url}}" />
+		<p class="group-inputs">
+			<input type="text" name="req_username" size="25" maxlength="25" tabindex="1" placeholder="{{#lang}}{{Username}}{{/lang}}" />
+			<input type="password" name="req_password" size="25" tabindex="2" placeholder="{{#lang}}{{Password}}{{/lang}}" />
+		</p>
+
+		<p class="buttons"><input type="submit" name="login" value="{{#lang}}{{Login}}{{/lang}}" tabindex="4" /></p>
+		<p id="actions"><label id="remember-me"><input type="checkbox" name="save_pass" value="1" tabindex="3" />{{#lang}}{{Remember me}}{{/lang}}</label><span id="forgot-pw"><a href="forget" tabindex="6">{{#lang}}{{Forgotten pass}}{{/lang}}</a></span></p>
+	</form>
+</div>
+
+{{> footer}}

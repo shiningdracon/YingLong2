@@ -1,5 +1,9 @@
 import Foundation
 
-public final class MemoryStorage {
-    
+public enum MemoryStorageError: Error {
+    case initFailed
+}
+
+public class MemoryStorage {
+    var storage: [String: Any] = [:]
 }

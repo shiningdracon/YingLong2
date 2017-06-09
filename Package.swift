@@ -11,5 +11,6 @@ let package = Package(
 		.Package(url: "https://github.com/shiningdracon/SwiftGD.git", majorVersion: 1),
 		.Package(url: "https://github.com/shiningdracon/OpenCC-swift.git", majorVersion: 1),
 		.Package(url: "https://github.com/shiningdracon/BBCode-Swift.git", majorVersion: 0),
-    ]
+		.Package(url: "https://github.com/IBM-Swift/BlueCryptor.git", majorVersion: 0),
+	]
 )

@@ -1,10 +1,5 @@
 {{> header}}
 			<div class="index-main-wrap box">
-				<ul id="collection-list" class="contentlist">
-					{{#collection_list}}
-					<li><a {{#current}}class="tab-current"{{/current}} href="{{url}}">{{name}}</a></li>
-					{{/collection_list}}
-				</ul>
 				<ul id="topiclist" class="contentlist">
 					{{#topic_list}}
 					<li>
@@ -30,7 +25,7 @@
 					</li>
 					{{/topic_list}}
 				</ul>
-				<span class="pagelink">{{#paginate}}{{#current_page?}}<strong{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</strong>{{/current_page?}}{{^current_page?}}<a href="/{{^first_item?}}page/{{page}}{{/first_item?}}"{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</a>{{/current_page?}}{{/paginate}}</span>
+				<span class="pagelink">{{#paginate}}{{#current_page?}}<strong{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</strong>{{/current_page?}}{{^current_page?}}<a href="/forum/{{forum_id}}{{^first_item?}}/{{page}}{{/first_item?}}"{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</a>{{/current_page?}}{{/paginate}}</span>
 			</div>
 			<aside>
 				<div class="box">

@@ -84,10 +84,10 @@ class MySQLPerfect: DatabaseProtocol {
                 if element.count != fieldNames.count {
                     return
                 }
-                var rowData = [String: Any]()
+                var rowData = [String: Any?]()
                 for i in 0..<element.count {
                     if let fieldname = fieldNames[i] {
-                        rowData[fieldname] = element[i]
+                        rowData[fieldname] = element[i] //[Any?]
                     }
                 }
                 ret.append(rowData)

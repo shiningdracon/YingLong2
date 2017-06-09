@@ -1,0 +1,110 @@
+{{> header}}
+<div class="main-wrap box">
+	<div class="linkst">
+		<div class="crumbsplus">
+			<ul class="crumbs">
+				<li><a href="/">{{#lang}}{{Index}}{{/lang}}</a></li>
+				<li class="convert"><span>»&#160;</span><a href="/forum/{{forum_id}}">{{forum_name}}</a></li>
+			</ul>
+			<div class="pagepost">
+				<p class="pagelink conl">{{#paginate}}{{#current_page?}}<strong{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</strong>{{/current_page?}}{{^current_page?}}<a href="/topic/{{topic_id}}{{^first_item?}}/{{page}}{{/first_item?}}"{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</a>{{/current_page?}}{{/paginate}}</p>
+			</div>
+		</div>
+	</div>
+
+	{{#post_list}}
+	{{#firstpost}}
+	<div id="p{{id}}" class="blockpost firstpost">
+		<h1>{{subject}}</h1>
+		<h2><span><span class="post-index">#{{post_index}}</span> <a href="p/{{id}}#p{{id}}">{{posted}}</a></span></h2>
+		<div class="postbody">
+			<div class="postmeta">
+				<dl>
+					<dt><strong><a href="user/{{poster_id}}">{{poster}}</a></strong></dt>
+					{{#user_info}}
+					<dd class="usertitle">{{user_title}}</dd>
+					<dd class="postavatar"><img src="{{user_avatar_url}}" alt="" /></dd>
+					<dd class="usercontacts">TODO</dd>
+					{{/user_info}}
+				</dl>
+			</div>
+			<div class="postcontent">
+				{{{message}}}
+				{{#edited}}
+				<p class="post-lastedit"><em>{{#lang}}{{Last edit}}{{/lang}} {{edited_by}} ({{edited}})</em></p>
+				{{/edited}}
+			</div>
+			{{#thanks}}
+			<div class="postthanks">
+				<p><?php echo sprintf($lang_thanks['Thanks'], $num_thanks).implode(', ', $users_thanks); ?></p>
+			</div>
+			{{/thanks}}
+			{{#signature}}
+			<div class="postsignature">{{signature}}</div>
+			{{/signature}}
+			<div class="postfoot">
+				<div class="postfootleft"></div>
+			</div>
+		</div>
+	</div>
+	{{/firstpost}}
+	{{^firstpost}}
+	<div id="p{{id}}" class="blockpost">
+		<h2><span><span class="post-index">#{{post_index}}</span> <a href="/post/{{id}}#p{{id}}" rel="nofollow">{{posted}}</a></span></h2>
+		<div class="postbody">
+			<div class="postmeta">
+				<dl>
+					<dt><strong><a href="user/{{poster_id}}">{{poster}}</a></strong></dt>
+					{{#user_info}}
+					<dd class="usertitle">{{user_title}}</dd>
+					<dd class="postavatar"><img src="{{user_avatar_url}}" alt="" /></dd>
+					<dd class="usercontacts">TODO</dd>
+					{{/user_info}}
+				</dl>
+			</div>
+			<div class="postcontent">
+				{{{message}}}
+				{{#edited}}
+				<p class="post-lastedit"><em>{{#lang}}{{Last edit}}{{/lang}} {{edited_by}} ({{edited}})</em></p>
+				{{/edited}}
+			</div>
+			{{#thanks}}
+			<div class="postthanks">
+				<p><?php echo sprintf($lang_thanks['Thanks'], $num_thanks).implode(', ', $users_thanks); ?></p>
+			</div>
+			{{/thanks}}
+			{{#signature}}
+			<div class="postsignature">{{signature}}</div>
+			{{/signature}}
+			<div class="postfoot">
+				<div class="postfootleft"></div>
+			</div>
+		</div>
+	</div>
+	{{/firstpost}}
+	{{/post_list}}
+	<div class="postlinksb">
+		<div class="crumbsplus">
+			<div class="pagepost">
+				<p class="pagelink conl">{{#paginate}}{{#current_page?}}<strong{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</strong>{{/current_page?}}{{^current_page?}}<a href="/topic/{{topic_id}}{{^first_item?}}/{{page}}{{/first_item?}}"{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</a>{{/current_page?}}{{/paginate}}</p>
+			</div>
+			<ul class="crumbs">
+				<li><a href="/">{{#lang}}{{Index}}{{/lang}}</a></li>
+				<li class="convert"><span>»&#160;</span><a href="/forum/{{forum_id}}">{{forum_name}}</a></li>
+				<li class="convert"><span>»&#160;</span><strong><a href="/topic/{{topic_id}}">{{subject}}</a></strong></li>
+			</ul>
+			<?php echo $subscraction ?>
+		</div>
+	</div>
+	{{#user}}
+	<div class="boxeditor">
+		<span>{{#lang}}{{Quick post}}{{/lang}}</span>
+		<form id="post" method="post" action="/postreply/{{topic_id}}" onsubmit="">
+			<input type="hidden" name="form_sent" value="1" />
+			<textarea name="req_message" id="req_message" rows="20" cols="95" tabindex="2"></textarea>
+			<p class="buttons"><input type="submit" name="submit" value="{{#lang}}{{Submit}}{{/lang}}" tabindex="3" accesskey="s" /> <input type="submit" name="preview" value="{{#lang}}{{Preview}}{{/lang}}" tabindex="4" accesskey="p" /></p>
+		</form>
+	</div>
+	{{/user}}
+</div>
+{{> footer}}

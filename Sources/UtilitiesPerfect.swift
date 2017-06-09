@@ -1,5 +1,7 @@
 import OpenCC
 import BBCode
+import PerfectLib
+import Cryptor
 
 class UtilitiesPerfect: UtilitiesProtocol {
     let openccS2T: OpenCC
@@ -56,4 +58,43 @@ class UtilitiesPerfect: UtilitiesProtocol {
             }
         }
     }
+
+    func getNow() -> Double {
+        return PerfectLib.getNow() / 1000
+    }
+
+    func md5(string: String) -> String? {
+        if let digest = Digest(using:.md5).update(string: string)?.final() {
+            return CryptoUtils.hexString(from: digest)
+        } else {
+            return nil
+        }
+    }
+
+    func sha1(string: String) -> String? {
+        if let digest = Digest(using:.sha1).update(string: string)?.final() {
+            return CryptoUtils.hexString(from: digest)
+        } else {
+            return nil
+        }
+    }
+
+    func sha256(string: String) -> String? {
+        if let digest = Digest(using:.sha256).update(string: string)?.final() {
+            return CryptoUtils.hexString(from: digest)
+        } else {
+            return nil
+        }
+    }
+
+    func forumHMAC(data: String, key: String) -> String? {
+        if let hmac = HMAC(using: HMAC.Algorithm.sha1, key: key).update(string: data)?.final() {
+            return CryptoUtils.hexString(from: hmac)
+        } else {
+            return nil
+        }
+    }
+
+
+
 }

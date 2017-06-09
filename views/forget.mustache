@@ -1,0 +1,28 @@
+{{> header}}
+
+{{#errors}}
+
+<div id="posterror" class="box">
+	<h2 class="box-title"><span>{{#lang}}{{New password errors}}{{/lang}}</span></h2>
+	<p>{{#lang}}{{New passworderrors info}}{{/lang}}</p>
+	<ul class="error-list">
+    <li><strong>{{description}}</strong></li>
+	</ul>
+</div>
+
+{{/errors}}
+
+<div class="box">
+	<h2 class="box-title"><span>{{#lang}}{{Request pass}}{{/lang}}</span></h2>
+	<form class="form-center" id="request_pass" method="post" action="forget_2" onsubmit="this.request_pass.disabled=true;if(process_form(this)){return true;}else{this.request_pass.disabled=false;return false;}">
+		<span>{{#lang}}{{Request pass legend}}{{/lang}}</span>
+		<input type="hidden" name="form_sent" value="1" />
+		<p class="group-inputs"><input id="req_email" type="text" name="req_email" size="50" maxlength="80" placeholder="{{#lang}}{{Email}}{{/lang}}" /></p>
+		<p>{{#lang}}{{Request pass info}}{{/lang}}</p>
+		<p class="buttons"><input type="submit" name="request_pass" value="{{#lang}}{{Submit}}{{/lang}}" /></p>
+		<p>{{^errors}}<a href="javascript:history.go(-1)">{{#lang}}{{Go back}}{{/lang}}</a>{{/errors}}</p>
+	</form>
+</div>
+
+
+{{> footer}}
