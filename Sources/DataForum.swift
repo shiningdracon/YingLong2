@@ -382,10 +382,22 @@ public struct YLDBusers {
     }
 }
 
+public struct YLDBforum_info {
+    var newestUserId: UInt32
+    var newestUserName: String
+    var totalUsers: UInt64
+    var totalTopics: UInt64
+    var totalPosts: UInt64
+}
+
 extension DataManager {
 
     public func getConfig() -> [String: String] {
         return memoryStorage.getConfigs()
+    }
+
+    public func getForumInfo() -> YLDBforum_info {
+        return memoryStorage.getForumInfo()
     }
 
     public func getUser(userID: UInt32) -> YLDBusers? {

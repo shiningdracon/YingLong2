@@ -24,6 +24,50 @@ extension DatabaseStorage {
         return nil
     }
 
+    public func getForumInfo() -> YLDBforum_info? {
+        defer {
+            db.clear()
+        }
+
+        var info = YLDBforum_info(newestUserId: 0, newestUserName: "", totalUsers: 0, totalTopics: 0, totalPosts: 0)
+
+        guard let results = db.select(statement: "select cast(sum(num_topics) as UNSIGNED) as num_topics, cast(sum(num_posts) as UNSIGNED) as num_posts from \(prefix)forums", params: []) else {
+            return nil
+        }
+
+        if results.count == 1 {
+            info.totalTopics = item(from: results[0]["num_topics"])
+            info.totalPosts = item(from: results[0]["num_posts"])
+        } else {
+            return nil
+        }
+
+        db.clear()
+        guard let results2 = db.select(statement: "SELECT CAST(COUNT(id)-1 as UNSIGNED) as num FROM \(prefix)users WHERE group_id!=?", params: [.uint(0)]) else {
+            return nil
+        }
+
+        if results2.count == 1 {
+            info.totalUsers = item(from: results2[0]["num"])
+        } else {
+            return nil
+        }
+
+        db.clear()
+        guard let results3 = db.select(statement: "SELECT id, username FROM \(prefix)users WHERE group_id!=?  ORDER BY registered DESC LIMIT 1", params: [.uint(0)]) else {
+            return nil
+        }
+
+        if results3.count == 1 {
+            info.newestUserId = item(from: results3[0]["id"])
+            info.newestUserName = item(from: results3[0]["username"])
+        } else {
+            return nil
+        }
+
+        return info
+    }
+
     public func getUser(userID: UInt32) -> [String: Any]? {
         guard let results = db.select(statement: "select * from \(prefix)users where id=?", params: [.uint(UInt(userID))]) else {
             return nil

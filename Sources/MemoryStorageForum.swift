@@ -21,6 +21,10 @@ extension MemoryStorage {
         return storage["permissions"] as! [YLDBforum_perms]
     }
 
+    func getForumInfo() -> YLDBforum_info {
+        return storage["forum info"] as! YLDBforum_info
+    }
+
     func initMemoryStorageForum(_ forumdb: DatabaseStorage) throws {
         guard let configs: [String: String] = forumdb.getAllConfigs() else {
             throw MemoryStorageError.initFailed
@@ -62,10 +66,15 @@ extension MemoryStorage {
             permissions.append(oneperm)
         }
 
+        guard let _info = forumdb.getForumInfo() else {
+            throw MemoryStorageError.initFailed
+        }
+
         self.storage["configs"] = configs
         self.storage["users"] = users
         self.storage["forums"] = forums
         self.storage["groups"] = groups
         self.storage["permissions"] = permissions
+        self.storage["forum info"] = _info
     }
 }

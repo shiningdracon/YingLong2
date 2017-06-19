@@ -178,15 +178,15 @@ extension SiteController {
     }
 
     func commonData(locale: i18nLocale) -> [String: Any] {
-        //TODO: use real data
         let config = dataManager.getConfig()
+        let forumInfo = dataManager.getForumInfo()
         return [
             "o_board_title": i18n(config["o_board_title"] ?? "", locale: locale),
             "lang": ForumI18n.instance.getI18n(locale),
-            "newest_user": "dragon",
-            "total_users": 1024,
-            "num_of_topics": 48823,
-            "total_posts": 2343454,
+            "newest_user": forumInfo.newestUserName,
+            "total_users": forumInfo.totalUsers,
+            "num_of_topics": forumInfo.totalTopics,
+            "total_posts": forumInfo.totalPosts,
         ]
     }
 
