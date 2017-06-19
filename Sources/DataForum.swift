@@ -400,6 +400,10 @@ extension DataManager {
         return memoryStorage.getForumInfo()
     }
 
+    public func getNewestTopics() -> [YLDBtopics] {
+        return memoryStorage.getNewestTopics()
+    }
+
     public func getUser(userID: UInt32) -> YLDBusers? {
         return memoryStorage.getUsers()[userID]
     }

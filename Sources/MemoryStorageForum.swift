@@ -25,6 +25,10 @@ extension MemoryStorage {
         return storage["forum info"] as! YLDBforum_info
     }
 
+    func getNewestTopics() -> [YLDBtopics] {
+        return storage["newest topics"] as! [YLDBtopics]
+    }
+
     func initMemoryStorageForum(_ forumdb: DatabaseStorage) throws {
         guard let configs: [String: String] = forumdb.getAllConfigs() else {
             throw MemoryStorageError.initFailed
@@ -66,8 +70,19 @@ extension MemoryStorage {
             permissions.append(oneperm)
         }
 
-        guard let _info = forumdb.getForumInfo() else {
+        guard let info = forumdb.getForumInfo() else {
             throw MemoryStorageError.initFailed
+        }
+
+        // TODO: range
+        guard let _newestTopics = forumdb.getTopics(from: [UInt32](1...15), startFrom: 0, limit: 5) else {
+            throw MemoryStorageError.initFailed
+        }
+
+        var newestTopics: [YLDBtopics] = []
+        for row in _newestTopics {
+            let t = YLDBtopics(row)
+            newestTopics.append(t)
         }
 
         self.storage["configs"] = configs
@@ -75,6 +90,7 @@ extension MemoryStorage {
         self.storage["forums"] = forums
         self.storage["groups"] = groups
         self.storage["permissions"] = permissions
-        self.storage["forum info"] = _info
+        self.storage["forum info"] = info
+        self.storage["newest topics"] = newestTopics
     }
 }

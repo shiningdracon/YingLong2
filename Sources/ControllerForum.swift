@@ -352,15 +352,15 @@ extension SiteController {
                 let display: UInt32 = UInt32(user.disp_topics ?? (UInt8.init(config["o_disp_topics_default"] ?? "50") ?? 50))
                 let startFrom: UInt32 = p * display
                 data["paginate"] = getPaginate(total: 100, startFrom: startFrom, display: display)
+
+                var newestTopics: [[String: Any]] = []
+                let topicArray = dataManager.getNewestTopics()
+                for t in topicArray {
+                    newestTopics.append(["subject": i18n(t.subject, locale: session.locale), "topic_id": t.id])
+                }
                 data.update(other: [//TODO
                     "collection_list": [["name": "All", "url": "#", "current": true]] as [[String: Any]],
-                    "newest_topic_list": [
-                        ["subject": "NBA", "topic_id": 1],
-                        ["subject": "Super Man", "topic_id": 1],
-                        ["subject": "Internet", "topic_id": 1],
-                        ["subject": "Bottle", "topic_id": 1],
-                        ["subject": "Apple", "topic_id": 1],
-                        ["subject": "Dragon can never be tamed.", "topic_id": 1]] as [[String: Any]]
+                    "newest_topic_list": newestTopics
                     ] as [String : Any])
                 //TODO: forums
                 if let topics = try getTopicList(forums: [1, 5, 7, 11], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
