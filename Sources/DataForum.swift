@@ -388,6 +388,14 @@ public struct YLDBforum_info {
     var totalUsers: UInt64
     var totalTopics: UInt64
     var totalPosts: UInt64
+
+    init(_ args: [String: Any]) {
+        newestUserId = item(from: args["user_id"])
+        newestUserName = item(from: args["username"])
+        totalUsers = item(from: args["total_users"])
+        totalTopics = item(from: args["total_topics"])
+        totalPosts = item(from: args["total_posts"])
+    }
 }
 
 extension DataManager {
@@ -499,10 +507,6 @@ extension DataManager {
 
     public func getForumName(id: UInt32) -> String {
         return memoryStorage.getForums()[id]?.forum_name ?? "Not Found"
-    }
-
-    public func getTotalTopicsAndPosts() -> (topics: Int, posts: Int) {
-        return dbStorage.getTotalTopicsAndPosts()
     }
 
     public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) -> UInt32? {

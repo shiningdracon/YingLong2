@@ -70,9 +70,10 @@ extension MemoryStorage {
             permissions.append(oneperm)
         }
 
-        guard let info = forumdb.getForumInfo() else {
+        guard let _info = forumdb.getForumInfo() else {
             throw MemoryStorageError.initFailed
         }
+        let info = YLDBforum_info(_info)
 
         // TODO: range
         guard let _newestTopics = forumdb.getTopics(from: [UInt32](1...15), startFrom: 0, limit: 5) else {

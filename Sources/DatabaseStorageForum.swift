@@ -24,43 +24,41 @@ extension DatabaseStorage {
         return nil
     }
 
-    public func getForumInfo() -> YLDBforum_info? {
+    public func getForumInfo() -> [String: Any]? {
         defer {
             db.clear()
         }
 
-        var info = YLDBforum_info(newestUserId: 0, newestUserName: "", totalUsers: 0, totalTopics: 0, totalPosts: 0)
+        var info: [String: Any] = [:]
 
-        guard let results = db.select(statement: "select cast(sum(num_topics) as UNSIGNED) as num_topics, cast(sum(num_posts) as UNSIGNED) as num_posts from \(prefix)forums", params: []) else {
+        guard let results = db.select(statement: "select cast(sum(num_topics) as UNSIGNED) as total_topics, cast(sum(num_posts) as UNSIGNED) as total_posts from \(prefix)forums", params: []) else {
             return nil
         }
 
         if results.count == 1 {
-            info.totalTopics = item(from: results[0]["num_topics"])
-            info.totalPosts = item(from: results[0]["num_posts"])
+            info.update(other: results[0])
         } else {
             return nil
         }
 
         db.clear()
-        guard let results2 = db.select(statement: "SELECT CAST(COUNT(id)-1 as UNSIGNED) as num FROM \(prefix)users WHERE group_id!=?", params: [.uint(0)]) else {
+        guard let results2 = db.select(statement: "SELECT CAST(COUNT(id)-1 as UNSIGNED) as total_users FROM \(prefix)users WHERE group_id!=?", params: [.uint(0)]) else {
             return nil
         }
 
         if results2.count == 1 {
-            info.totalUsers = item(from: results2[0]["num"])
+            info.update(other: results2[0])
         } else {
             return nil
         }
 
         db.clear()
-        guard let results3 = db.select(statement: "SELECT id, username FROM \(prefix)users WHERE group_id!=?  ORDER BY registered DESC LIMIT 1", params: [.uint(0)]) else {
+        guard let results3 = db.select(statement: "SELECT id as user_id, username FROM \(prefix)users WHERE group_id!=?  ORDER BY registered DESC LIMIT 1", params: [.uint(0)]) else {
             return nil
         }
 
         if results3.count == 1 {
-            info.newestUserId = item(from: results3[0]["id"])
-            info.newestUserName = item(from: results3[0]["username"])
+            info.update(other: results3[0])
         } else {
             return nil
         }
@@ -299,23 +297,6 @@ extension DatabaseStorage {
             }
         }
         return nil
-    }
-
-    public func getTotalTopicsAndPosts() -> (topics: Int, posts: Int) {
-        guard let result = db.select(statement: "SELECT SUM(num_topics) as totalTopic, SUM(num_posts) as totalPost FROM \(prefix)forums", params: []) else {
-            return (topics: 0, posts: 0)
-        }
-
-        defer {
-            db.clear()
-        }
-
-        if let row = result.first {
-            let totalTopic = row["totalTopic"] as? String ?? "0"
-            let totalPost = row["totalPost"] as? String ?? "0"
-            return (topics: Int(totalTopic) ?? 0, posts: Int(totalPost) ?? 0)
-        }
-        return (topics: 0, posts: 0)
     }
 
     public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) -> UInt32? {
