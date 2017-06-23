@@ -1,2 +1,2 @@
-# WebComicTranslatePlatform
-一个网络漫画翻译平台
+# YingLong 2.0
+网站重构
