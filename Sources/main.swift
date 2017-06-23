@@ -222,6 +222,26 @@ class SiteMain {
     }
 
     func start() {
+
+        setupForumRoutes()
+        setupComicRoutes()
+
+        let server = HTTPServer()
+        server.serverAddress = serverConfig.address
+        server.serverPort = serverConfig.port
+        server.addRoutes(routes)
+        server.documentRoot = "./webroot" // Setting the document root will add a default URL route which permits static files to be served from within.
+
+        do {
+            try server.start()
+        } catch {
+            fatalError("\(error)")
+        }
+    }
+}
+
+extension SiteMain {
+    func setupForumRoutes() {
         addRoute(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             return controller.mainPage(session: session as! ForumSessionInfo, page: 1)
         })
@@ -296,8 +316,9 @@ class SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
+    }
 
-
+    func setupComicRoutes() {
         addRoute(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
@@ -385,7 +406,7 @@ class SiteMain {
 
                             let localname = "\(UUID().string).\(fileExtension)"
                             return controller.postAddPage(session: session, comicId: cid, title: title, description: description, imgWebURL: "/images/"+localname, onSeccuss: { (pageId: UInt32) in
-
+                                
                                 try controller.toolAddFile(pageId: pageId, filename: upload.fileName, localname: localname, mimetype: upload.contentType, size: UInt32(upload.fileSize))
                                 guard image.write(to: URL(fileURLWithPath: "webroot/images/"+localname), quality: 75) else {
                                     throw WebFrameworkError.RuntimeError("Failed write image file")
@@ -398,9 +419,9 @@ class SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-
+        
         addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-
+            
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
                     return controller.editPage(session: session, comicId: cid, pageIndex: pidx)
@@ -408,9 +429,9 @@ class SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-
+        
         addRoute(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-
+            
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
                     if let content = request.param(name: "content") {
@@ -424,19 +445,6 @@ class SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-
-
-        let server = HTTPServer()
-        server.serverAddress = serverConfig.address
-        server.serverPort = serverConfig.port
-        server.addRoutes(routes)
-        server.documentRoot = "./webroot" // Setting the document root will add a default URL route which permits static files to be served from within.
-
-        do {
-            try server.start()
-        } catch {
-            fatalError("\(error)")
-        }
     }
 }
 
