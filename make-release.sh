@@ -4,7 +4,7 @@ mkdir release
 cp .build/release/*.so release/
 cp .build/release/YingLong2 release/
 mkdir -p release/views
-cp -r views/*.mustache release/views/
+cp -r views/* release/views/
 
 tar jcf release.tar.bz2 release
 
