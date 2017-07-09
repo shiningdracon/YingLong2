@@ -122,9 +122,9 @@ class SiteMain {
                     LogFile.info("[\(request.remoteAddress.host)] URI: \(request.uri)")
                 } catch {
                     response.status = .internalServerError
-                    response.appendBody(string: "\(error)")
+                    response.appendBody(string: "Service error")
                     response.completed()
-                    LogFile.info("[\(request.remoteAddress.host)] \(error)")
+                    LogFile.error("[\(request.remoteAddress.host)] \(error)")
                 }
             case .Redirect(location: let location):
                 response.status = .found
