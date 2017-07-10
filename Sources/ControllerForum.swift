@@ -15,6 +15,10 @@ public class ForumSessionInfo: SessionInfo {
     }
 }
 
+enum ForumError: Error {
+    case GenerateCSRFError
+}
+
 extension SiteController {
     enum TopicType: Int32 {
         case Normal = 0
@@ -47,6 +51,21 @@ extension SiteController {
             fatalError("cookieSeed not set")
         }
         return utilities.forumHMAC(data: passwordHash, key: "\(cookieSeed)_cookie_hash")
+    }
+
+    func CSRFToken(session: ForumSessionInfo) throws -> String {
+        guard let cookieSeed = siteConfig["cookieSeed"] else {
+            fatalError("cookieSeed not set")
+        }
+        if let token = utilities.forumHMAC(data: "\(session.userID)\(session.passwordHash)", key: "\(cookieSeed)_cookie_hash") {
+            return token
+        } else {
+            throw ForumError.GenerateCSRFError
+        }
+    }
+
+    func checkCSRF(session: ForumSessionInfo, token: String) throws -> Bool {
+        return hashEquals(a: token, b: try CSRFToken(session: session))
     }
 
     func getDefaultUser(remoteAddress: String) throws -> YLDBusers? {
@@ -340,13 +359,16 @@ extension SiteController {
         do {
             let p = page <= 1 ? 0 : page - 1
             if let user = try getCurrentUser(session: session) {
-
                 var data = commonData(locale: session.locale)
                 data["page_title"] = i18n(config["o_board_title"] ?? "", locale: session.locale)
                 if user.isGuest() == false {
                     data["user"] = [
-                        "username": user.username
+                        "username": user.username,
+                        "userID": user.id,
+                        "csrf_token": try CSRFToken(session: session)
                     ]
+                } else {
+                    return SiteResponse(status: .Redirect(location: "/login"), session: nil)
                 }
 
                 let display: UInt32 = UInt32(user.disp_topics ?? (UInt8.init(config["o_disp_topics_default"] ?? "50") ?? 50))
@@ -373,6 +395,8 @@ extension SiteController {
             return SiteResponse(status: .NotFound, session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
@@ -386,9 +410,14 @@ extension SiteController {
                 var data = commonData(locale: session.locale)
                 if user.isGuest() == false {
                     data["user"] = [
-                        "username": user.username
+                        "username": user.username,
+                        "userID": user.id,
+                        "csrf_token": try CSRFToken(session: session)
                     ]
+                } else {
+                    return SiteResponse(status: .Redirect(location: "/login"), session: nil)
                 }
+
                 let display: UInt32 = UInt32(user.disp_posts ?? (UInt8.init(config["o_disp_posts_default"] ?? "25") ?? 25))
                 let startFrom: UInt32 = p * display
                 if let topic = try dataManager.getTopic(id: id) {
@@ -413,6 +442,8 @@ extension SiteController {
             return SiteResponse(status: .Error(message: detail), session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
@@ -424,6 +455,9 @@ extension SiteController {
             if let post = try dataManager.getPost(id: postId) {
                 if let postLocation = dataManager.locatePostInTopic(topicId: post.topic_id, posted: post.posted) {
                     if let user = try getCurrentUser(session: session) {
+                        if user.isGuest() {
+                            return SiteResponse(status: .Redirect(location: "/login"), session: nil)
+                        }
                         let display: UInt32 = UInt32(user.disp_posts ?? (UInt8(config["o_disp_posts_default"] ?? "25") ?? 25))
                         let page: UInt32 = ((postLocation + 1) / display) + 1
                         //TODO: which one is better? server side or client side?
@@ -449,9 +483,14 @@ extension SiteController {
                 var data = commonData(locale: session.locale)
                 if user.isGuest() == false {
                     data["user"] = [
-                        "username": user.username
+                        "username": user.username,
+                        "userID": user.id,
+                        "csrf_token": try CSRFToken(session: session)
                     ]
+                } else {
+                    return SiteResponse(status: .Redirect(location: "/login"), session: nil)
                 }
+
                 let display: UInt32 = UInt32(user.disp_posts ?? (UInt8.init(config["o_disp_posts_default"] ?? "25") ?? 25))
                 let startFrom: UInt32 = p * display
                 if let forum = dataManager.getForum(id: id) {
@@ -470,6 +509,8 @@ extension SiteController {
             return SiteResponse(status: .NotFound, session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
@@ -488,8 +529,17 @@ extension SiteController {
     }
 
     public func logoutHandler(session: ForumSessionInfo, csrf: String) -> SiteResponse {
-        // TODO
-        return SiteResponse(status: .Redirect(location: "/"), session: nil)
+        do {
+            if try checkCSRF(session: session, token: csrf) {
+                return SiteResponse(status: .Redirect(location: "/"), session: nil)
+            } else {
+                return SiteResponse(status: .Error(message: "CSRF check failed"), session: session)
+            }
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+        }
     }
 
 }

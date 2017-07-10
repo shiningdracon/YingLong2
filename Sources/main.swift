@@ -110,6 +110,8 @@ class SiteMain {
             if let responseSession = result.session as? ForumSessionInfo {
                 let value = "\(responseSession.userID)|\(responseSession.passwordHash)|\(responseSession.expirationTime)|\(responseSession.sessionHash))"
                 response.addCookie(HTTPCookie(name: siteConfig.cookieName, value: value, domain: siteConfig.cookieDomain, expires: HTTPCookie.Expiration.relativeSeconds(Int(responseSession.expirationTime)), path: nil, secure: siteConfig.cookieSecure, httpOnly: true))
+            } else {
+                response.addCookie(HTTPCookie(name: siteConfig.cookieName, value: "", domain: siteConfig.cookieDomain, expires: HTTPCookie.Expiration.absoluteSeconds(0), path: nil, secure: siteConfig.cookieSecure, httpOnly: true))
             }
 
             response.addHeader(.contentSecurityPolicy, value: "default-src 'self'; img-src * data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src * wss:;")
@@ -260,11 +262,9 @@ extension SiteMain {
             return controller.loginHandler(session: session as! ForumSessionInfo, username: username, password: password, savepass: savepass, redirectURL: "/")
         })
         addRoute(method: .get, uri: "/logout", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let paramID = request.urlVariables["id"] {
-                if let id = UInt32(paramID) {
-                    let csrf = request.param(name: "csrf_token") ?? ""
-                    return controller.logoutHandler(session: session as! ForumSessionInfo, csrf: csrf)
-                }
+            if let paramID = request.param(name: "id"), UInt32(paramID) != nil {
+                let csrf = request.param(name: "csrf_token") ?? ""
+                return controller.logoutHandler(session: session as! ForumSessionInfo, csrf: csrf)
             }
             return SiteResponse(status: .NotFound, session: session)
         })

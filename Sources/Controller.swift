@@ -98,11 +98,6 @@ public final class SiteController {
         return SiteResponse(status: .OK(view: "error.mustache", data: ["message": message]), session: session)
     }
 
-    public func checkCSRF(token: String) -> Bool {
-        // TODO
-        return true
-    }
-
     public func validateRedirect(url: String) -> Bool {
         // TODO
         return true
