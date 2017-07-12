@@ -20,6 +20,8 @@ class SiteMain {
     struct ServerConfig {
         var address: String
         var port: UInt16
+        var sslCertificatePath: String
+        var sslKeyPath: String
     }
 
     struct SiteConfig {
@@ -173,6 +175,8 @@ class SiteMain {
                     let address = serverConfigJSON["address"] as? String,
                     let portString = serverConfigJSON["port"] as? String,
                     let port = UInt16(portString),
+                    let sslCertificatePath = serverConfigJSON["sslCertificatePath"] as? String,
+                    let sslKeyPath = serverConfigJSON["sslKeyPath"] as? String,
 
                     let siteConfigJSON = json["siteConfig"] as? [String: Any],
                     let uploadSizeLimitString = siteConfigJSON["uploadSizeLimit"] as? String,
@@ -186,7 +190,7 @@ class SiteMain {
                     let cookieSeed = siteConfigJSON["cookieSeed"] as? String
                 {
                     self.databaseConfig = DatabaseConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
-                    self.serverConfig = ServerConfig(address: address, port: port)
+                    self.serverConfig = ServerConfig(address: address, port: port, sslCertificatePath: sslCertificatePath, sslKeyPath: sslKeyPath)
                     self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit, cookieName: cookieName, cookieDomain: cookieDomain, cookiePath: cookiePath, cookieSecure: cookieSecure, cookieSeed: cookieSeed)
                 } else {
                     fatalError("Load config failed")
@@ -231,6 +235,7 @@ class SiteMain {
         let server = HTTPServer()
         server.serverAddress = serverConfig.address
         server.serverPort = serverConfig.port
+        server.ssl = (serverConfig.sslCertificatePath, serverConfig.sslKeyPath)
         server.addRoutes(routes)
         server.documentRoot = "./webroot" // Setting the document root will add a default URL route which permits static files to be served from within.
 
