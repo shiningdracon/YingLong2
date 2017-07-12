@@ -10,8 +10,8 @@ extension DatabaseStorage {
             db.clear()
         }
 
+        var configs = [String: String]()
         if results.count > 0 {
-            var configs = [String: String]()
             for row in results {
                 if let value: String = item(from: row["conf_value"]) {
                     configs[item(from: row["conf_name"])] = value
@@ -21,7 +21,7 @@ extension DatabaseStorage {
             }
             return configs
         }
-        return nil
+        return configs
     }
 
     public func getForumInfo() -> [String: Any]? {
@@ -37,6 +37,12 @@ extension DatabaseStorage {
 
         if results.count == 1 {
             info.update(other: results[0])
+            if info["total_topics"] as? UInt64 == nil {
+                info["total_topics"] = UInt64(0)
+            }
+            if info["total_posts"] as? UInt64 == nil {
+                info["total_posts"] = UInt64(0)
+            }
         } else {
             return nil
         }
@@ -48,6 +54,9 @@ extension DatabaseStorage {
 
         if results2.count == 1 {
             info.update(other: results2[0])
+            if info["total_users"] as? UInt64 == nil {
+                info["total_users"] = UInt64(0)
+            }
         } else {
             return nil
         }
@@ -60,7 +69,8 @@ extension DatabaseStorage {
         if results3.count == 1 {
             info.update(other: results3[0])
         } else {
-            return nil
+            info["username"] = "N/A"
+            info["user_id"] = UInt32(0)
         }
 
         return info
