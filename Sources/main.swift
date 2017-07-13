@@ -235,7 +235,9 @@ class SiteMain {
         let server = HTTPServer()
         server.serverAddress = serverConfig.address
         server.serverPort = serverConfig.port
-        server.ssl = (serverConfig.sslCertificatePath, serverConfig.sslKeyPath)
+        if !serverConfig.sslCertificatePath.isEmpty && !serverConfig.sslKeyPath.isEmpty {
+            server.ssl = (serverConfig.sslCertificatePath, serverConfig.sslKeyPath)
+        }
         server.addRoutes(routes)
         server.documentRoot = "./webroot" // Setting the document root will add a default URL route which permits static files to be served from within.
 
