@@ -115,6 +115,7 @@ extension SiteController {
         return hashEquals(a: localSessionPasswordHash, b: sessionPasswordHash)
     }
 
+    //TODO:
     func getPaginate(total: UInt32, startFrom: UInt32, display: UInt32) -> [[String: Any]] {
         var paginate: [[String: Any]] = []
         let pages: UInt32 = total / display + 1
@@ -133,8 +134,8 @@ extension SiteController {
         return paginate
     }
 
-    func getTopicList(forums: [UInt32], startFrom: UInt32, limit: UInt32, curUser: YLDBusers, locale: i18nLocale) throws -> [[String: Any]]? {
-        if let topics = try dataManager.getTopics(from: forums, startFrom: startFrom, limit: limit) {
+    func getTopicList(forumIds: [UInt32], startFrom: UInt32, limit: UInt32, curUser: YLDBusers, locale: i18nLocale) throws -> [[String: Any]]? {
+        if let topics = try dataManager.getTopics(forumIds: forumIds, startFrom: startFrom, limit: limit) {
             var topicList: [[String: Any]] = []
             for onetopic in topics {
                 var topic: [String: Any] = [:]
@@ -371,10 +372,6 @@ extension SiteController {
                     return SiteResponse(status: .Redirect(location: "/login"), session: nil)
                 }
 
-                let display: UInt32 = UInt32(user.disp_topics ?? (UInt8.init(config["o_disp_topics_default"] ?? "50") ?? 50))
-                let startFrom: UInt32 = p * display
-                data["paginate"] = getPaginate(total: 100, startFrom: startFrom, display: display)
-
                 var newestTopics: [[String: Any]] = []
                 let topicArray = dataManager.getNewestTopics()
                 for t in topicArray {
@@ -384,8 +381,13 @@ extension SiteController {
                     "collection_list": [["name": "All", "url": "#", "current": true]] as [[String: Any]],
                     "newest_topic_list": newestTopics
                     ] as [String : Any])
-                //TODO: forums
-                if let topics = try getTopicList(forums: [1, 5, 7, 11], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
+                //TODO: forumIds
+                let totalTopics = dataManager.getTotalTopics(forumIds: [1, 5, 7, 11])
+                let display: UInt32 = UInt32(user.disp_topics ?? (UInt8.init(config["o_disp_topics_default"] ?? "50") ?? 50))
+                let startFrom: UInt32 = p * display
+                data["paginate"] = getPaginate(total: totalTopics, startFrom: startFrom, display: display)
+
+                if let topics = try getTopicList(forumIds: [1, 5, 7, 11], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
                     if topics.count > 0 {
                         data["topic_list"] = topics
                     }
@@ -498,7 +500,7 @@ extension SiteController {
                     data["page_title"] = forumName + " / " + (i18n(config["o_board_title"] ?? "", locale: session.locale))
                     data["forum_id"] = id
                     data["paginate"] = getPaginate(total: forum.num_topics, startFrom: startFrom, display: display)
-                    if let topics = try getTopicList(forums: [id], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
+                    if let topics = try getTopicList(forumIds: [id], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
                         if topics.count > 0 {
                             data["topic_list"] = topics
                         }

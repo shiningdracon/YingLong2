@@ -229,14 +229,14 @@ extension DatabaseStorage {
         return [:]
     }
 
-    public func getTopics(from: [UInt32], startFrom: UInt32, limit: UInt32) -> [[String: Any]]? {
-        let forumIdsPlaceHolder = from.map({
+    public func getTopics(forumIds: [UInt32], startFrom: UInt32, limit: UInt32) -> [[String: Any]]? {
+        let forumIdsPlaceHolder = forumIds.map({
             (_) -> String in
             "?"
         }).joined(separator: ",")
         let sql = "SELECT * FROM \(prefix)topics WHERE forum_id IN (\(forumIdsPlaceHolder)) ORDER BY last_post DESC LIMIT ?, ?"
 
-        var params: [DatabaseValue] = from.map({
+        var params: [DatabaseValue] = forumIds.map({
             (n) -> DatabaseValue in
             .uint(UInt(n))
         })

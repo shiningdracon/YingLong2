@@ -76,7 +76,7 @@ extension MemoryStorage {
         let info = YLDBforum_info(_info)
 
         // TODO: range
-        guard let _newestTopics = forumdb.getTopics(from: [UInt32](1...15), startFrom: 0, limit: 5) else {
+        guard let _newestTopics = forumdb.getTopics(forumIds: [UInt32](1...15), startFrom: 0, limit: 5) else {
             throw MemoryStorageError.initFailed
         }
 

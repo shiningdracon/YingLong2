@@ -463,8 +463,8 @@ extension DataManager {
         return YLDBtopics(args)
     }
 
-    public func getTopics(from: [UInt32], startFrom: UInt32, limit: UInt32) throws -> [YLDBtopics]? {
-        guard let _topics = dbStorage.getTopics(from: from, startFrom: startFrom, limit: limit) else {
+    public func getTopics(forumIds: [UInt32], startFrom: UInt32, limit: UInt32) throws -> [YLDBtopics]? {
+        guard let _topics = dbStorage.getTopics(forumIds: forumIds, startFrom: startFrom, limit: limit) else {
             throw DataError.dbError
         }
         if _topics.count == 0 {
@@ -507,6 +507,18 @@ extension DataManager {
 
     public func getForumName(id: UInt32) -> String {
         return memoryStorage.getForums()[id]?.forum_name ?? "Not Found"
+    }
+
+    public func getTotalTopics(forumIds: [UInt32]) -> UInt32 {
+        var total: UInt32 = 0
+        let forums = memoryStorage.getForums()
+        for i in forumIds {
+            if let num = forums[i]?.num_topics {
+                total = total + num
+            }
+        }
+
+        return total
     }
 
     public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) -> UInt32? {
