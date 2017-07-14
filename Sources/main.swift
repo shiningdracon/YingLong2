@@ -237,6 +237,7 @@ class SiteMain {
         server.serverPort = serverConfig.port
         if !serverConfig.sslCertificatePath.isEmpty && !serverConfig.sslKeyPath.isEmpty {
             server.ssl = (serverConfig.sslCertificatePath, serverConfig.sslKeyPath)
+            server.alpnSupport = [.http2, .http11]
         }
         server.addRoutes(routes)
         server.documentRoot = "./webroot" // Setting the document root will add a default URL route which permits static files to be served from within.
