@@ -115,19 +115,75 @@ extension SiteController {
         return hashEquals(a: localSessionPasswordHash, b: sessionPasswordHash)
     }
 
-    //TODO:
+    // Caller should make sure "total" is greater than "startFrom"
     func getPaginate(total: UInt32, startFrom: UInt32, display: UInt32) -> [[String: Any]] {
         var paginate: [[String: Any]] = []
-        let pages: UInt32 = total / display + 1
-        let cur: UInt32 = startFrom / display + 1
-        for p in 1...pages {
-            var item: [String: Any] = [:]
-            item["page"] = p
-            if p == 1 {
-                item["first_item?"] = true
+        let totalPages: UInt32 = total / display + 1
+        let curPage: UInt32 = startFrom / display + 1
+
+        var pages: Array<UInt32> = []
+        if totalPages <= 7 {
+            pages.append(contentsOf: 1...7)
+        } else {
+            var curBlockEdgeLeft: UInt32
+            var curBlockEdgeRight: UInt32
+
+            if curPage >= 3 {
+                curBlockEdgeLeft = curPage - 2
+            } else {
+                curBlockEdgeLeft = 1
             }
-            if p == cur {
-                item["current_page?"] = true
+
+            if curBlockEdgeLeft <= 2 {
+                curBlockEdgeRight = 7
+            } else {
+                curBlockEdgeRight = curBlockEdgeLeft + 4
+            }
+            if curBlockEdgeRight + 2 > totalPages {
+                let overflowRight = curBlockEdgeRight + 2 - totalPages
+                if curBlockEdgeLeft > overflowRight {
+                    curBlockEdgeLeft = curBlockEdgeLeft - overflowRight
+                } else {
+                    curBlockEdgeLeft = 1
+                }
+                curBlockEdgeRight = totalPages
+            }
+
+            if curBlockEdgeLeft == 2 {
+                pages.append(1)
+            } else if curBlockEdgeLeft == 3 {
+                pages.append(1)
+                pages.append(2)
+            } else if curBlockEdgeLeft > 3 {
+                pages.append(1)
+                pages.append(0)
+            }
+
+            pages.append(contentsOf: curBlockEdgeLeft...curBlockEdgeRight)
+
+            if curBlockEdgeRight + 2 < totalPages {
+                pages.append(0)
+                pages.append(totalPages)
+            } else if curBlockEdgeRight + 2 == totalPages {
+                pages.append(totalPages - 1)
+                pages.append(totalPages)
+            } else if curBlockEdgeRight + 1 == totalPages {
+                pages.append(totalPages)
+            }
+        }
+
+        for p in pages {
+            var item: [String: Any] = [:]
+            if p == 0 {
+                item["suspension?"] = true
+            } else {
+                item["page"] = p
+                if p == 1 {
+                    item["first_item?"] = true
+                }
+                if p == curPage {
+                    item["current_page?"] = true
+                }
             }
             paginate.append(item)
         }
@@ -199,14 +255,14 @@ extension SiteController {
 
     func commonData(locale: i18nLocale) -> [String: Any] {
         let config = dataManager.getConfig()
-        let forumInfo = dataManager.getForumInfo()
+        let siteInfo = dataManager.getSiteInfo()
         return [
             "o_board_title": i18n(config["o_board_title"] ?? "", locale: locale),
             "lang": ForumI18n.instance.getI18n(locale),
-            "newest_user": forumInfo.newestUserName,
-            "total_users": forumInfo.totalUsers,
-            "num_of_topics": forumInfo.totalTopics,
-            "total_posts": forumInfo.totalPosts,
+            "newest_user": siteInfo.newestUserName,
+            "total_users": siteInfo.totalUsers,
+            "num_of_topics": siteInfo.totalTopics,
+            "total_posts": siteInfo.totalPosts,
         ]
     }
 
@@ -354,7 +410,7 @@ extension SiteController {
     }
 
     // GET handlers
-    public func mainPage(session: ForumSessionInfo, page: UInt32) -> SiteResponse {
+    public func mainPage(session: ForumSessionInfo, tab: UInt32, page: UInt32) -> SiteResponse {
 
         let config = dataManager.getConfig()
         do {
@@ -385,13 +441,15 @@ extension SiteController {
                 let totalTopics = dataManager.getTotalTopics(forumIds: [1, 5, 7, 11])
                 let display: UInt32 = UInt32(user.disp_topics ?? (UInt8.init(config["o_disp_topics_default"] ?? "50") ?? 50))
                 let startFrom: UInt32 = p * display
-                data["paginate"] = getPaginate(total: totalTopics, startFrom: startFrom, display: display)
+                if totalTopics >= startFrom {
+                    data["paginate"] = getPaginate(total: totalTopics, startFrom: startFrom, display: display)
 
-                if let topics = try getTopicList(forumIds: [1, 5, 7, 11], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
-                    if topics.count > 0 {
-                        data["topic_list"] = topics
+                    if let topics = try getTopicList(forumIds: [1, 5, 7, 11], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
+                        if topics.count > 0 {
+                            data["topic_list"] = topics
+                        }
+                        return SiteResponse(status: .OK(view: "main.mustache", data: data), session: session)
                     }
-                    return SiteResponse(status: .OK(view: "main.mustache", data: data), session: session)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
@@ -428,14 +486,16 @@ extension SiteController {
                     data["page_title"] = subject + " / " + forumName + " / " + (i18n(config["o_board_title"] ?? "", locale: session.locale))
                     data["topic_id"] = id
                     data["subject"] = subject
-                    data["paginate"] = getPaginate(total: topic.num_replies, startFrom: startFrom, display: display)
                     data["forum_id"] = topic.forum_id
                     data["forum_name"] = forumName
-                    if let posts = try getPostList(topicId: id, startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
-                        if posts.count > 0 {
-                            data["post_list"] = posts
+                    if topic.num_replies > startFrom {
+                        data["paginate"] = getPaginate(total: topic.num_replies, startFrom: startFrom, display: display)
+                        if let posts = try getPostList(topicId: id, startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
+                            if posts.count > 0 {
+                                data["post_list"] = posts
+                            }
+                            return SiteResponse(status: .OK(view: "viewtopic.mustache", data: data), session: session)
                         }
-                        return SiteResponse(status: .OK(view: "viewtopic.mustache", data: data), session: session)
                     }
                 }
             }
@@ -499,12 +559,14 @@ extension SiteController {
                     let forumName = i18n(forum.forum_name, locale: session.locale)
                     data["page_title"] = forumName + " / " + (i18n(config["o_board_title"] ?? "", locale: session.locale))
                     data["forum_id"] = id
-                    data["paginate"] = getPaginate(total: forum.num_topics, startFrom: startFrom, display: display)
-                    if let topics = try getTopicList(forumIds: [id], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
-                        if topics.count > 0 {
-                            data["topic_list"] = topics
+                    if forum.num_topics > startFrom {
+                        data["paginate"] = getPaginate(total: forum.num_topics, startFrom: startFrom, display: display)
+                        if let topics = try getTopicList(forumIds: [id], startFrom: startFrom, limit: display, curUser: user, locale: session.locale) {
+                            if topics.count > 0 {
+                                data["topic_list"] = topics
+                            }
+                            return SiteResponse(status: .OK(view: "viewforum.mustache", data: data), session: session)
                         }
-                        return SiteResponse(status: .OK(view: "viewforum.mustache", data: data), session: session)
                     }
                 }
             }

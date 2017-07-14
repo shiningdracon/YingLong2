@@ -30,7 +30,7 @@
 					</li>
 					{{/topic_list}}
 				</ul>
-				<span class="pagelink">{{#paginate}}{{#current_page?}}<strong{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</strong>{{/current_page?}}{{^current_page?}}<a href="/{{^first_item?}}page/{{page}}{{/first_item?}}"{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</a>{{/current_page?}}{{/paginate}}</span>
+				<span class="pagelink">{{#paginate}}{{#suspension?}}<span class="spacer">...</span>{{/suspension?}}{{^suspension?}}{{#current_page?}}<strong{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</strong>{{/current_page?}}{{^current_page?}}<a href="/{{^first_item?}}page/{{page}}{{/first_item?}}"{{#first_item?}} class="item1"{{/first_item?}}>{{page}}</a>{{/current_page?}}{{/suspension?}}{{/paginate}}</span>
 			</div>
 			<aside>
 				<div class="box">

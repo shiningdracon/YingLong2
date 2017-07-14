@@ -252,12 +252,14 @@ class SiteMain {
 extension SiteMain {
     func setupForumRoutes() {
         addRoute(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            return controller.mainPage(session: session as! ForumSessionInfo, page: 1)
+            let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
+            return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: 1)
         })
 
         addRoute(method: .get, uri: "/page/{page}", handler: { controller, session, request, response in
+            let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
             let page = UInt32.init(request.urlVariables["page"] ?? "1") ?? 1
-            return controller.mainPage(session: session as! ForumSessionInfo, page: page)
+            return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: page)
         })
         addRoute(method: .get, uri: "/login", handler: { controller, session, request, response in return controller.loginPage(session: session as! ForumSessionInfo) })
         addRoute(method: .get, uri: "/forget", handler: { controller, session, request, response in return controller.forgetPage(session: session as! ForumSessionInfo) })
