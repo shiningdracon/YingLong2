@@ -22,6 +22,7 @@ class SiteMain {
         var port: UInt16
         var sslCertificatePath: String
         var sslKeyPath: String
+        var enableHTTP2: Bool
     }
 
     struct SiteConfig {
@@ -177,6 +178,8 @@ class SiteMain {
                     let port = UInt16(portString),
                     let sslCertificatePath = serverConfigJSON["sslCertificatePath"] as? String,
                     let sslKeyPath = serverConfigJSON["sslKeyPath"] as? String,
+                    let enableHTTP2String = serverConfigJSON["enableHTTP2"] as? String,
+                    let enableHTTP2 = Bool(enableHTTP2String),
 
                     let siteConfigJSON = json["siteConfig"] as? [String: Any],
                     let uploadSizeLimitString = siteConfigJSON["uploadSizeLimit"] as? String,
@@ -190,7 +193,7 @@ class SiteMain {
                     let cookieSeed = siteConfigJSON["cookieSeed"] as? String
                 {
                     self.databaseConfig = DatabaseConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
-                    self.serverConfig = ServerConfig(address: address, port: port, sslCertificatePath: sslCertificatePath, sslKeyPath: sslKeyPath)
+                    self.serverConfig = ServerConfig(address: address, port: port, sslCertificatePath: sslCertificatePath, sslKeyPath: sslKeyPath, enableHTTP2: enableHTTP2)
                     self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit, cookieName: cookieName, cookieDomain: cookieDomain, cookiePath: cookiePath, cookieSecure: cookieSecure, cookieSeed: cookieSeed)
                 } else {
                     fatalError("Load config failed")
@@ -237,6 +240,8 @@ class SiteMain {
         server.serverPort = serverConfig.port
         if !serverConfig.sslCertificatePath.isEmpty && !serverConfig.sslKeyPath.isEmpty {
             server.ssl = (serverConfig.sslCertificatePath, serverConfig.sslKeyPath)
+        }
+        if serverConfig.enableHTTP2 {
             server.alpnSupport = [.http2, .http11]
         }
         server.addRoutes(routes)
