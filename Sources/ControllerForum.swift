@@ -431,7 +431,7 @@ extension SiteController {
                 var newestTopics: [[String: Any]] = []
                 let topicArray = dataManager.getNewestTopics()
                 for t in topicArray {
-                    newestTopics.append(["subject": i18n(t.subject, locale: session.locale), "topic_id": t.id])
+                    newestTopics.append(["subject": i18n(t.subject, locale: session.locale), "id": t.id])
                 }
                 data.update(other: [//TODO
                     "collection_list": [["name": "All", "url": "#", "current": true]] as [[String: Any]],
