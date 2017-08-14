@@ -123,7 +123,7 @@ extension SiteController {
 
         var pages: Array<UInt32> = []
         if totalPages <= 7 {
-            pages.append(contentsOf: 1...7)
+            pages.append(contentsOf: 1...totalPages)
         } else {
             var curBlockEdgeLeft: UInt32
             var curBlockEdgeRight: UInt32
