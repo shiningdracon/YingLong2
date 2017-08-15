@@ -218,34 +218,41 @@ extension SiteController {
             var postList: [[String: Any]] = []
             var postCount: UInt32 = startFrom
             for onepost in posts {
+                var post: [String: Any] = [:]
+                postCount += 1
+                if postCount == 1 {
+                    post["firstpost"] = true
+                }
+                post["id"] = onepost.id
+                post["poster"] = onepost.poster
+                post["poster_id"] = onepost.poster_id
+                post["posted"] = formatTime(time: Double(onepost.posted), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst))
+                post["message"] = i18n(try utilities.BBCode2HTML(bbcode: onepost.message ?? "", local: locale), locale: locale)
+                post["post_index"] = startFrom + postCount
+                if onepost.edited != nil {
+                    post["edited"] = [
+                        "edited": formatTime(time: Double(onepost.edited!), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst)),
+                        "edited_by": onepost.edited_by ?? ""
+                        ] as [String: Any]
+                }
+
                 if let user = dataManager.getUser(userID: onepost.poster_id) {
                     if let group = dataManager.getGroup(id: user.group_id) {
-                        var post: [String: Any] = [:]
-                        postCount += 1
-                        if postCount == 1 {
-                            post["firstpost"] = true
-                        }
-                        post["id"] = onepost.id
-                        post["poster"] = onepost.poster
-                        post["poster_id"] = onepost.poster_id
-                        post["posted"] = formatTime(time: Double(onepost.posted), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst))
-                        post["message"] = i18n(try utilities.BBCode2HTML(bbcode: onepost.message ?? "", local: locale), locale: locale)
-                        post["post_index"] = startFrom + postCount
-                        if onepost.edited != nil {
-                            post["edited"] = [
-                                "edited": formatTime(time: Double(onepost.edited!), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst)),
-                                "edited_by": onepost.edited_by ?? ""
-                                ] as [String: Any]
-                        }
                         post["user_info"] = [
-                            "user_title": user.title ?? group.g_title,
-                            "registed": formatTime(time: Double(user.registered), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst)),
-                            "post_count": user.num_posts
+                            "title": user.title ?? group.g_title,
+                            //"registed": formatTime(time: Double(user.registered), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst)),
+                            //"avatar_url": "", //TODO
                             ] as [String: Any]
                         postList.append(post)
+                    } else {
+                        // Unexpected
                     }
                 } else {
-                    //TODO deleted user
+                    // Deleted user
+                    post["user_info"] = [
+                        "user_title": ForumI18n.instance.getI18n(locale, key: "[Deleted User]"),
+                        ] as [String: Any]
+                    postList.append(post)
                 }
             }
             return postList

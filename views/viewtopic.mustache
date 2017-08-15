@@ -20,11 +20,11 @@
 		<div class="postbody">
 			<div class="postmeta">
 				<dl>
-					<dt><strong><a href="user/{{poster_id}}">{{poster}}</a></strong></dt>
+					<dt><strong><a href="/draconity/{{poster_id}}">{{poster}}</a></strong></dt>
 					{{#user_info}}
-					<dd class="usertitle">{{user_title}}</dd>
-					<dd class="postavatar"><img src="{{user_avatar_url}}" alt="" /></dd>
-					<dd class="usercontacts">TODO</dd>
+					<dd class="usertitle">{{title}}</dd>
+					{{#avatar_url}}<dd class="postavatar"><img src="{{avatar_url}}" alt="" /></dd>{{/avatar_url}}
+					<dd class="usercontacts"></dd>
 					{{/user_info}}
 				</dl>
 			</div>
@@ -54,11 +54,11 @@
 		<div class="postbody">
 			<div class="postmeta">
 				<dl>
-					<dt><strong><a href="user/{{poster_id}}">{{poster}}</a></strong></dt>
+					<dt><strong><a href="/draconity/{{poster_id}}">{{poster}}</a></strong></dt>
 					{{#user_info}}
-					<dd class="usertitle">{{user_title}}</dd>
-					<dd class="postavatar"><img src="{{user_avatar_url}}" alt="" /></dd>
-					<dd class="usercontacts">TODO</dd>
+					<dd class="usertitle">{{title}}</dd>
+					{{#avatar_url}}<dd class="postavatar"><img src="{{avatar_url}}" alt="" /></dd>{{/avatar_url}}
+					<dd class="usercontacts"></dd>
 					{{/user_info}}
 				</dl>
 			</div>

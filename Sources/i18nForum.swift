@@ -91,6 +91,7 @@ public class ForumI18n : SiteI18n {
             "Administrator"			:	"论坛管理员",
             "Banned"				:	"停权",
             "Guest"					:	"访客",
+            "[Deleted User]"        :   "[用户已删除]",
 
             // Stuff for include/parser.php
             "BBCode error no opening tag"		:	"[/%1$s] 缺少对应的 [%1$s]",
@@ -377,6 +378,7 @@ public class ForumI18n : SiteI18n {
             "Administrator"			:	"论坛管理员",
             "Banned"				:	"停权",
             "Guest"					:	"访客",
+            "[Deleted User]"        :   "[用戶已刪除]",
 
             // Stuff for include/parser.php
             "BBCode error no opening tag"		:	"[/%1$s] 缺少对应的 [%1$s]",
