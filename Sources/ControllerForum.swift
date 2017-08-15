@@ -607,26 +607,37 @@ extension SiteController {
     }
 
     public func draconityPage(session: ForumSessionInfo, userId: UInt32) -> SiteResponse {
-        var data = commonData(locale: session.locale)
-        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Draconity")
         do {
-            if let viewuser = dataManager.getUser(userID: userId) {
-                data["viewuser"] = [
-                    "username": viewuser.username,
-                    "userID": viewuser.id
-                ]
-                if let draconity = try dataManager.getDraconity(userId: userId) {
-                    data["draconity"] = [
-                        "resume": draconity.resume,
-                        "draconity": draconity.draconity
-                    ]
+            if let user = try getCurrentUser(session: session) {
+                if let group = dataManager.getGroup(id: user.id) {
+                    if group.g_view_users {
+                        var data = commonData(locale: session.locale)
+                        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Draconity")
+
+                        if let userToBeView = dataManager.getUser(userID: userId) {
+                            data["viewuser"] = [
+                                "username": userToBeView.username,
+                                "userID": userToBeView.id
+                            ]
+
+                            if let draconity = try dataManager.getDraconity(userId: userId) {
+                                data["draconity"] = [
+                                    "resume": draconity.resume,
+                                    "draconity": draconity.draconity
+                                ]
+                                return SiteResponse(status: .OK(view: "draconity.mustache", data: data), session: nil)
+                            }
+                        }
+                    } else {
+                        return errorNotifyPage(session: session, message: "No permission")
+                    }
                 }
             }
+            return SiteResponse(status: .NotFound, session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
-        return SiteResponse(status: .OK(view: "draconity.mustache", data: data), session: nil)
     }
 }
