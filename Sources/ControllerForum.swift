@@ -204,6 +204,7 @@ extension SiteController {
                 topic["is_painting"] = (onetopic.special == TopicType.Painting.rawValue)
                 topic["forum_name"] = i18n(dataManager.getForumName(id: onetopic.forum_id), locale: locale)
                 topic["forum_id"] = onetopic.forum_id
+                topic["last_post_id"] = onetopic.last_post_id
                 topicList.append(topic)
             }
             return topicList
