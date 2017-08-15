@@ -398,6 +398,22 @@ public struct YLDBsite_info {
     }
 }
 
+public struct YLDBdraconity {
+    var userId: UInt32
+    var useAvatar: Bool
+    var resume: String
+    var draconity: String
+    var draconityOptions: String
+
+    init(_ args: [String: Any]) {
+        userId = item(from: args["user_id"])
+        useAvatar = item(from: args["use_avatar"]) as Int8 == 0 ? false : true
+        resume = item(from: args["resume"])
+        draconity = item(from: args["dragoncode"])
+        draconityOptions = item(from: args["draconity_ops"])
+    }
+}
+
 extension DataManager {
 
     public func getConfig() -> [String: String] {
@@ -539,6 +555,18 @@ extension DataManager {
 
     public func deleteTopic(id: UInt32) -> Bool {
         return dbStorage.deletePost(id: id)
+    }
+
+    public func getDraconity(userId: UInt32) throws -> YLDBdraconity? {
+        guard let args = dbStorage.getDraconity(userId: userId) else {
+            throw DataError.dbError
+        }
+
+        if args.count == 0 {
+            return nil
+        }
+
+        return YLDBdraconity(args)
     }
 }
 

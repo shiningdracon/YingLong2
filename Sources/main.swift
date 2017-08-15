@@ -331,6 +331,12 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
+        addRoute(method: .get, uri: "/draconity/{uid}", handler: { controller, session, request, response in
+            if let userId = UInt32(request.urlVariables["uid"] ?? "0") {
+                return controller.draconityPage(session: session as! ForumSessionInfo, userId: userId)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
     }
 
     func setupComicRoutes() {

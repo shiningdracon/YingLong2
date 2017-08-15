@@ -394,4 +394,20 @@ extension DatabaseStorage {
 
         return ret
     }
+
+    public func getDraconity(userId: UInt32) -> [String: Any]? {
+        guard let results = db.select(statement: "SELECT * FROM \(prefix)otherforms WHERE user_id=?", params: [.uint(UInt(userId))]) else {
+            return nil
+        }
+
+        defer {
+            db.clear()
+        }
+
+        if results.count > 0 {
+            return results[0]
+        }
+
+        return [:]
+    }
 }
