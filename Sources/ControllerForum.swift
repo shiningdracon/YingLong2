@@ -123,7 +123,7 @@ extension SiteController {
 
         var pages: Array<UInt32> = []
         if totalPages <= 7 {
-            pages.append(contentsOf: 1...7)
+            pages.append(contentsOf: 1...totalPages)
         } else {
             var curBlockEdgeLeft: UInt32
             var curBlockEdgeRight: UInt32
@@ -431,7 +431,7 @@ extension SiteController {
                 var newestTopics: [[String: Any]] = []
                 let topicArray = dataManager.getNewestTopics()
                 for t in topicArray {
-                    newestTopics.append(["subject": i18n(t.subject, locale: session.locale), "topic_id": t.id])
+                    newestTopics.append(["subject": i18n(t.subject, locale: session.locale), "id": t.id])
                 }
                 data.update(other: [//TODO
                     "collection_list": [["name": "All", "url": "#", "current": true]] as [[String: Any]],
