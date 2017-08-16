@@ -561,6 +561,15 @@ extension SiteController {
                     return SiteResponse(status: .Redirect(location: "/login"), session: nil)
                 }
 
+                var newestTopics: [[String: Any]] = []
+                let topicArray = dataManager.getNewestTopics() //TODO: for all forum or for current forum?
+                for t in topicArray {
+                    newestTopics.append(["subject": i18n(t.subject, locale: session.locale), "id": t.id])
+                }
+                data.update(other: [
+                    "newest_topic_list": newestTopics
+                    ] as [String : Any])
+
                 let display: UInt32 = UInt32(user.disp_posts ?? (UInt8.init(config["o_disp_posts_default"] ?? "25") ?? 25))
                 let startFrom: UInt32 = p * display
                 if let forum = dataManager.getForum(id: id) {
