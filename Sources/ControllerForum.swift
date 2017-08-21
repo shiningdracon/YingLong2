@@ -295,6 +295,10 @@ extension SiteController {
     }
 
     // POST handlers
+    public func uploadFileHandler(filename: String, localname: String, mimetype: String, size: UInt32) throws {
+        try self.dataManager.uploadFile(filename: filename, localname: localname, mimetype: mimetype, size: size)
+    }
+
     public func loginHandler(session: SessionInfo, username: String, password: String, savepass: Bool, redirectURL: String) -> SiteResponse {
         let config = dataManager.getConfig()
         do {

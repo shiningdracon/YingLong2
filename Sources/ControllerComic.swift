@@ -2,6 +2,10 @@ import Foundation
 
 extension SiteController {
 
+    public func comicAddFile(pageId: UInt32, filename: String, localname: String, mimetype: String, size: UInt32) throws {
+        try self.dataManager.addFile(pageId: pageId, filename: filename, localname: localname, mimetype: mimetype, size: size)
+    }
+
     public func viewPage(session: SessionInfo, comicId: UInt32, pageIndex: UInt32) -> SiteResponse {
         do {
             if let comic = try self.dataManager.getComic(id: comicId) {

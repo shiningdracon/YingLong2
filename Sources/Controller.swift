@@ -90,10 +90,6 @@ public final class SiteController {
         }
     }
 
-    public func toolAddFile(pageId: UInt32, filename: String, localname: String, mimetype: String, size: UInt32) throws {
-        try self.dataManager.addFile(pageId: pageId, filename: filename, localname: localname, mimetype: mimetype, size: size)
-    }
-
     public func errorNotifyPage(session: SessionInfo, message: String) -> SiteResponse {
         return SiteResponse(status: .OK(view: "error.mustache", data: ["message": message]), session: session)
     }

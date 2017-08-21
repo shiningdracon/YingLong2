@@ -428,7 +428,7 @@ extension SiteMain {
                             let localname = "\(UUID().string).\(fileExtension)"
                             return controller.postAddPage(session: session, comicId: cid, title: title, description: description, imgWebURL: "/images/"+localname, onSeccuss: { (pageId: UInt32) in
                                 
-                                try controller.toolAddFile(pageId: pageId, filename: upload.fileName, localname: localname, mimetype: upload.contentType, size: UInt32(upload.fileSize))
+                                try controller.comicAddFile(pageId: pageId, filename: upload.fileName, localname: localname, mimetype: upload.contentType, size: UInt32(upload.fileSize))
                                 guard image.write(to: URL(fileURLWithPath: "webroot/images/"+localname), quality: 75) else {
                                     throw WebFrameworkError.RuntimeError("Failed write image file")
                                 }
