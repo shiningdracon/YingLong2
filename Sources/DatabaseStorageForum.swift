@@ -411,21 +411,23 @@ extension DatabaseStorage {
         return [:]
     }
 
-    public func addFile(filename: String, localname: String, mimetype: String, size: UInt32) -> Bool {
-        guard let _ = db.insert(statement: "insert into \(prefix)files (filename, localname, mimetype, size) values(?,?,?,?)",
+    public func insertUpload(fileName: String, localName: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) -> UInt32? {
+        guard let insertId = db.insert(statement: "insert into \(prefix)uploads (file_name, local_name, size, hash, mime_type, user_id) values(?,?,?,?,?,?)",
             params: [
-                .string(filename),
-                .string(localname),
-                .string(mimetype),
-                .uint(UInt(size))
+                .string(fileName),
+                .string(localName),
+                .uint(UInt(size)),
+                .string(hash),
+                .string(mimeType),
+                .uint(UInt(userId))
             ]) else {
-                return false
+                return nil
         }
 
         defer {
             db.clear()
         }
 
-        return true
+        return UInt32(insertId);
     }
 }

@@ -42,3 +42,15 @@ create table files(
 	mimetype varchar(16) NOT NULL,
 	size int(10) unsigned NOT NULL
 ) ENGINE=InnoDB CHARACTER SET=utf8;
+
+create table uploads(
+	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+	`file_name` varchar(1024) NOT NULL,
+	`local_name` varchar(1024) NOT NULL,
+	`size` int(10) unsigned NOT NULL
+	`hash` char(40) DEFAULT NULL,
+	`mime_type` varchar(16) NOT NULL,
+	`user_id` int(10) unsigned,
+	PRIMARY KEY (`id`),
+	KEY `Hash` (`size`,`hash`) USING BTREE,
+) ENGINE=InnoDB CHARACTER SET=utf8;

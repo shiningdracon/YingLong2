@@ -569,10 +569,12 @@ extension DataManager {
         return YLDBdraconity(args)
     }
 
-    public func uploadFile(filename: String, localname: String, mimetype: String, size: UInt32) throws {
-        guard dbStorage.addFile(filename: filename, localname: localname, mimetype: mimetype, size: size) else {
+    public func insertUpload(fileName: String, localName: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) throws -> UInt32 {
+        guard let insertId = dbStorage.insertUpload(fileName: fileName, localName: localName, mimeType: mimeType, size: size, hash: hash, userId: userId) else {
             throw DataError.dbError
         }
+
+        return insertId
     }
 }
 
