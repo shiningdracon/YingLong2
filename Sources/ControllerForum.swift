@@ -295,7 +295,8 @@ extension SiteController {
     }
 
     public func uploadFile(fileName: String, localName: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) throws -> UInt32 {
-        return try self.dataManager.insertUpload(fileName: fileName, localName: localName, mimeType: mimeType, size: size, hash: hash, userId: userId)
+        let now = UInt32(self.utilities.getNow())
+        return try self.dataManager.insertUpload(fileName: fileName, localName: localName, mimeType: mimeType, size: size, hash: hash, userId: userId, createTime: now)
     }
 
     // POST handlers

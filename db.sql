@@ -35,16 +35,9 @@ create table comments(
 	PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
-create table files(
-	page_id int(10) unsigned NOT NULL,
-	filename varchar(1024) NOT NULL,
-	localname varchar(1024) NOT NULL,
-	mimetype varchar(16) NOT NULL,
-	size int(10) unsigned NOT NULL
-) ENGINE=InnoDB CHARACTER SET=utf8;
-
-create table uploads(
+create table uploaded_files(
 	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+	`created` int(10) unsigned NOT NULL,
 	`file_name` varchar(1024) NOT NULL,
 	`local_name` varchar(1024) NOT NULL,
 	`size` int(10) unsigned NOT NULL
@@ -53,4 +46,26 @@ create table uploads(
 	`user_id` int(10) unsigned,
 	PRIMARY KEY (`id`),
 	KEY `Hash` (`size`,`hash`) USING BTREE,
+) ENGINE=InnoDB CHARACTER SET=utf8;
+
+create table folders(
+	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+) ENGINE=InnoDB CHARACTER SET=utf8;
+
+create table file_in_folder(
+	`file_id` int(10) unsigned NOT NULL,
+	`folder_id` int(10) unsigned NOT NULL,
+	KEY `map` (`file_id`,`folder_id`) USING BTREE,
+) ENGINE=InnoDB CHARACTER SET=utf8;
+
+create table file_in_post(
+	`file_id` int(10) unsigned NOT NULL,
+	`post_id` int(10) unsigned NOT NULL,
+	KEY `map` (`file_id`,`post_id`) USING BTREE,
+) ENGINE=InnoDB CHARACTER SET=utf8;
+
+create table file_in_comic_page(
+	`file_id` int(10) unsigned NOT NULL,
+	`page_id` int(10) unsigned NOT NULL,
+	KEY `map` (`file_id`,`page_id`) USING BTREE,
 ) ENGINE=InnoDB CHARACTER SET=utf8;

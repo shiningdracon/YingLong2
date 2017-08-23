@@ -1,17 +1,50 @@
 import Foundation
 import SwiftGD
 
-class FileUploader {
-    let sizeLimit: Int
-    let uploadDir: String
 
-    init(sizeLimit: Int, uploadDir: String) {
-        self.sizeLimit = sizeLimit
-        self.uploadDir = uploadDir
+class ImageUploader {
+    public enum ImageUploadError: Error {
+        case IOError(String)
+        case TypeError
+        case ValidationError
     }
 
-    func uploadByFile(path: String, contentType: String, fileName: String, fileSize: Int) {
+    struct ImageOptions {
+        let uploadDir: String
+        let newName: String
+        let maxWidth: Int
+        let maxHeight: Int
+        let quality: Int
+        let rotateByExif: Bool
+    }
 
+    let imageVersions: Array<ImageOptions>
+
+    init(imageVersions: Array<ImageOptions>) {
+        self.imageVersions = imageVersions
+    }
+
+    // return: new file path
+    func uploadByFile(path: String, contentType: String, fileName: String) throws {
+        var fileExtension: String
+        if contentType == "image/jpeg" {
+            fileExtension = "jpeg"
+        } else if contentType == "image/png" {
+            fileExtension = "png"
+        } else if contentType == "" {
+            fileExtension = fileName.filePathExtension
+        } else {
+            fileExtension = ""
+        }
+        guard fileExtension == "png" || fileExtension == "jpg" || fileExtension == "jpeg" else {
+            throw ImageUploadError.TypeError
+        }
+
+        if let image = Image(url: URL(fileURLWithPath: path)) {
+            try reCreateImage(image: image, ext: fileExtension)
+        } else {
+            throw ImageUploadError.ValidationError
+        }
     }
 
     func uploadByBase64(base64: String, contentType: String) {
@@ -22,11 +55,11 @@ class FileUploader {
 
     }
 
-    private func validateImage(path: String) -> Bool {
-        if let image = Image(url: URL(fileURLWithPath: path)) {
-            return true
-        } else {
-            return false
+    private func reCreateImage(image: Image, ext: String) throws {
+        for option in imageVersions {
+            guard image.write(to: URL(fileURLWithPath: option.uploadDir + "/" + option.newName + "." + ext), quality: option.quality) else {
+                throw ImageUploadError.IOError("Write file failed")
+            }
         }
     }
 }
