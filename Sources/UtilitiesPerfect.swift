@@ -37,9 +37,9 @@ class UtilitiesPerfect: UtilitiesProtocol {
         }
     }
 
-    func BBCode2HTML(bbcode: String, local: i18nLocale) throws -> String {
+    func BBCode2HTML(bbcode: String, local: i18nLocale, configuration: [String: Any]?) throws -> String {
         do {
-            return try self.bbcode.parse(bbcode: bbcode)
+            return try self.bbcode.parse(bbcode: bbcode, args: configuration)
         } catch let error as BBCodeError {
             let i18nData = BBCodeI18n.instance.getI18n(local)
             switch error {

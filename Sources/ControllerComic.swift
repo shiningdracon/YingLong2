@@ -25,7 +25,7 @@ extension SiteController {
                         jumpArray[Int(pageIndex-1)]["selected"] = "selected"
                         data["quick_jump"] = jumpArray
                         data["title"] = i18n(page.title, locale: session.locale)
-                        data["description"] = i18n(try utilities.BBCode2HTML(bbcode: page.description, local: session.locale), locale: session.locale)
+                        data["description"] = i18n(try utilities.BBCode2HTML(bbcode: page.description, local: session.locale, configuration: nil), locale: session.locale)
                         data["content"] = i18n(page.content, locale: session.locale)
                         return SiteResponse(status: .OK(view: "comic/viewpage.mustache", data: data), session: session)
                     }
@@ -96,7 +96,7 @@ extension SiteController {
             guard let comic = try self.dataManager.getComic(id: comicId) else {
                 return SiteResponse(status: .NotFound, session: session)
             }
-            _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale)
+            _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale, configuration: nil)
 
             let pageIndex = comic.pageCount + 1
             let pageId = try self.dataManager.addPage(comicId: comicId, pageIndex: pageIndex, title: title, poster: "guest", description: description, content: "{\"backgroundImage\":{\"type\":\"image\",\"originX\":\"left\",\"originY\":\"top\",\"left\":0,\"top\":0,\"fill\":\"rgb(0,0,0)\",\"stroke\":null,\"strokeWidth\":0,\"strokeDashArray\":null,\"strokeLineCap\":\"butt\",\"strokeLineJoin\":\"miter\",\"strokeMiterLimit\":10,\"scaleX\":1,\"scaleY\":1,\"angle\":0,\"flipX\":false,\"flipY\":false,\"opacity\":1,\"shadow\":null,\"visible\":true,\"clipTo\":null,\"backgroundColor\":\"\",\"fillRule\":\"nonzero\",\"globalCompositeOperation\":\"source-over\",\"transformMatrix\":null,\"skewX\":0,\"skewY\":0,\"crossOrigin\":\"\",\"alignX\":\"none\",\"alignY\":\"none\",\"meetOrSlice\":\"meet\",\"src\":\"\(imgWebURL)\",\"filters\":[]}}")
@@ -130,7 +130,7 @@ extension SiteController {
     public func postUpdatePage(session: SessionInfo, comicId: UInt32, pageIndex: UInt32, title: String, description: String, content: String) -> SiteResponse {
         if let jsonString = reGenerateJSON(jsonString: content) {
             do {
-                _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale)
+                _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale, configuration: nil)
             } catch WebFrameworkError.BBCodeError(let detail) {
                 var data: [String: Any] = ["lang": ComicI18n.instance.getI18n(session.locale)]
                 data["comic_id"] = comicId
@@ -167,7 +167,7 @@ extension SiteController {
                     dataComic["id"] = comic.id
                     dataComic["title"] = i18n(comic.title, locale: session.locale)
                     dataComic["poster"] = comic.poster
-                    dataComic["description"] = i18n(try utilities.BBCode2HTML(bbcode: page.description, local: session.locale), locale: session.locale)
+                    dataComic["description"] = i18n(try utilities.BBCode2HTML(bbcode: page.description, local: session.locale, configuration: nil), locale: session.locale)
                     dataComic["page_count"] = comic.pageCount
                     dataComicList.append(dataComic)
                 }
@@ -193,7 +193,7 @@ extension SiteController {
                 data["title"] = i18n(comic.title, locale: session.locale)
                 data["author"] = comic.author
                 data["poster"] = comic.poster
-                data["description"] = i18n(try utilities.BBCode2HTML(bbcode: comic.description, local: session.locale), locale: session.locale)
+                data["description"] = i18n(try utilities.BBCode2HTML(bbcode: comic.description, local: session.locale, configuration: nil), locale: session.locale)
 
                 data["page_count"] = comic.pageCount
                 if let pageList = try self.dataManager.getPageListOfComic(id: comicId), pageList.count > 0 {
@@ -235,7 +235,7 @@ extension SiteController {
         data["author"] = author
         data["description"] = description
         do {
-            _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale)
+            _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale, configuration: nil)
             let comicId = try self.dataManager.addComic(title: title, author: author, poster: "guest", description: description)
             return SiteResponse(status: .Redirect(location: "/comic/\(comicId)"), session: session)
         } catch WebFrameworkError.RuntimeError(let msg) {
@@ -280,7 +280,7 @@ extension SiteController {
             guard let comic = try self.dataManager.getComic(id: comicId) else {
                 return SiteResponse(status: .NotFound, session: session)
             }
-            _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale)
+            _ = try self.utilities.BBCode2HTML(bbcode: description, local: session.locale, configuration: nil)
             guard self.dataManager.updateComic(id: comicId, title: title, author: author, pageCount: comic.pageCount, description: description) else {
                 return SiteResponse(status: .Error(message: "DB failed"), session: session)
             }

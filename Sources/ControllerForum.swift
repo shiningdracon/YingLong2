@@ -227,7 +227,7 @@ extension SiteController {
                 post["poster"] = onepost.poster
                 post["poster_id"] = onepost.poster_id
                 post["posted"] = formatTime(time: Double(onepost.posted), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst))
-                post["message"] = i18n(try utilities.BBCode2HTML(bbcode: onepost.message ?? "", local: locale), locale: locale)
+                post["message"] = i18n(try utilities.BBCode2HTML(bbcode: onepost.message ?? "", local: locale, configuration: ["post number": Int(curUser.num_posts)]), locale: locale)
                 post["post_index"] = startFrom + postCount
                 if onepost.edited != nil {
                     post["edited"] = [
@@ -347,7 +347,7 @@ extension SiteController {
                     let permission = dataManager.getPermission(forumId: forumId, groupId: user.group_id)
                     if canPostTopic(group: group, permission: permission) {
 
-                        _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale)
+                        _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
 
                         let now = UInt32(self.utilities.getNow())
                         if let insertTopicId = dataManager.insertTopic(forumId: forumId, subject: subject, user: user, postTime: now, type: 0, sticky: false) {
@@ -394,7 +394,7 @@ extension SiteController {
                             let permission = dataManager.getPermission(forumId: topic.forum_id, groupId: user.group_id)
                             if canPostReply(topic: topic, group: group, permission: permission) {
 
-                                _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale)
+                                _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
 
                                 let now = UInt32(self.utilities.getNow())
                                 let remoteAddress = session.remoteAddress
