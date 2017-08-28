@@ -7,6 +7,7 @@ class ImageUploader {
         case IOError(String)
         case TypeError
         case ValidationError
+        case OperationError(String)
     }
 
     struct ImageOptions {
@@ -55,12 +56,35 @@ class ImageUploader {
 
     }
 
-    private func reCreateImage(image: Image, ext: String) throws {
+    private func reCreateImage(image: Image, ext: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+
+        var infos: Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> = []
         for option in imageVersions {
-            guard image.write(to: URL(fileURLWithPath: option.uploadDir + "/" + option.newName + "." + ext), quality: option.quality) else {
+            let fullName = option.newName + "." + ext
+            let fullPath = option.uploadDir + "/" + fullName
+            let fileUrl = URL(fileURLWithPath: fullPath)
+
+            guard let newImage = image.resizedTo(width: option.maxWidth, height: option.maxHeight, applySmoothing: true) else { //TODO
+                throw ImageUploadError.OperationError("Resize failed")
+            }
+
+            let (width, height) = newImage.size
+            guard newImage.write(to: fileUrl, quality: option.quality) else {
                 throw ImageUploadError.IOError("Write file failed")
             }
+
+            let size: Int
+            do {
+                size = try fileUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+            } catch {
+                throw ImageUploadError.IOError("Get file size failed")
+            }
+            let hash = "" //TODO
+
+            infos.append((fullPath, fullName, size, hash, width, height))
         }
+
+        return infos
     }
 }
 
