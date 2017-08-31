@@ -1,5 +1,6 @@
 import Foundation
 import SwiftGD
+import Cryptor
 
 
 class ImageUploader {
@@ -19,6 +20,11 @@ class ImageUploader {
         let rotateByExif: Bool
     }
 
+    enum ImageTypes: String {
+        case png = "png"
+        case jpg = "jpg"
+    }
+
     let imageVersions: Array<ImageOptions>
 
     init(imageVersions: Array<ImageOptions>) {
@@ -26,23 +32,27 @@ class ImageUploader {
     }
 
     // return: new file path
-    func uploadByFile(path: String, contentType: String, fileName: String) throws {
-        var fileExtension: String
+    func uploadByFile(path: String, contentType: String, fileName: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+        var fileExtension: ImageTypes
         if contentType == "image/jpeg" {
-            fileExtension = "jpeg"
+            fileExtension = .jpg
         } else if contentType == "image/png" {
-            fileExtension = "png"
+            fileExtension = .png
         } else if contentType == "" {
-            fileExtension = fileName.filePathExtension
+            let ext = fileName.filePathExtension
+            if ext == "jpg" || ext == "jpeg" {
+                fileExtension = .jpg
+            } else if ext == "png" {
+                fileExtension = .png
+            } else {
+                throw ImageUploadError.TypeError
+            }
         } else {
-            fileExtension = ""
-        }
-        guard fileExtension == "png" || fileExtension == "jpg" || fileExtension == "jpeg" else {
             throw ImageUploadError.TypeError
         }
 
         if let image = Image(url: URL(fileURLWithPath: path)) {
-            try reCreateImage(image: image, ext: fileExtension)
+            return try saveImage(image: image, ext: fileExtension)
         } else {
             throw ImageUploadError.ValidationError
         }
@@ -56,32 +66,67 @@ class ImageUploader {
 
     }
 
-    private func reCreateImage(image: Image, ext: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+    private func saveImage(image: Image, ext: ImageTypes) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
 
         var infos: Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> = []
         for option in imageVersions {
-            let fullName = option.newName + "." + ext
+            let fullName = option.newName + "." + ext.rawValue
             let fullPath = option.uploadDir + "/" + fullName
             let fileUrl = URL(fileURLWithPath: fullPath)
 
-            guard let newImage = image.resizedTo(width: option.maxWidth, height: option.maxHeight, applySmoothing: true) else { //TODO
-                throw ImageUploadError.OperationError("Resize failed")
+            var (width, height) = image.size
+
+            let adjustedImage: Image?
+            if width > height {
+                if width > option.maxWidth {
+                    adjustedImage = image.resizedTo(width: option.maxWidth, applySmoothing: true)
+                } else {
+                    adjustedImage = image
+                }
+            } else {
+                if height > option.maxHeight {
+                    adjustedImage = image.resizedTo(height: option.maxHeight, applySmoothing: true)
+                } else {
+                    adjustedImage = image
+                }
             }
 
-            let (width, height) = newImage.size
-            guard newImage.write(to: fileUrl, quality: option.quality) else {
+            if adjustedImage == nil {
+                throw ImageUploadError.OperationError("Adjust image failed")
+            }
+
+
+            (width, height) = adjustedImage!.size
+
+            let data: Data?
+            let size: Int32
+
+            switch ext {
+            case .jpg:
+                (data, size) = adjustedImage!.writeToJpegData(quality: option.quality)
+            case .png:
+                (data, size) = adjustedImage!.writeToPngData()
+            }
+            if data == nil {
+                throw ImageUploadError.OperationError("Generate image failed")
+            }
+
+            let hash = CryptoUtils.hexString(from: [UInt8](data!.sha256))
+
+            let fm = FileManager()
+
+            // refuse to overwrite existing files
+            guard fm.fileExists(atPath: fileUrl.path) == false else {
+                throw ImageUploadError.IOError("File already exist")
+            }
+
+            do {
+                try data!.write(to: fileUrl)
+            } catch {
                 throw ImageUploadError.IOError("Write file failed")
             }
 
-            let size: Int
-            do {
-                size = try fileUrl.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-            } catch {
-                throw ImageUploadError.IOError("Get file size failed")
-            }
-            let hash = "" //TODO
-
-            infos.append((fullPath, fullName, size, hash, width, height))
+            infos.append((fullPath, fullName, Int(size), hash, width, height))
         }
 
         return infos
