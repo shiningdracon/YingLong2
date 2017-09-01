@@ -329,7 +329,7 @@ extension SiteController {
         }
     }
 
-    public func postTopicHandler(session: ForumSessionInfo, subject: String, message: String, forumId: UInt32) -> SiteResponse {
+    public func postTopicHandler(session: ForumSessionInfo, subject: String, message: String, forumId: UInt32, attachedFile: String? = nil) -> SiteResponse {
 
         var success = false
         dataManager.transactionStart()

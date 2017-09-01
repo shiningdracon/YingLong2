@@ -18,6 +18,7 @@ class ImageUploader {
         let maxHeight: Int
         let quality: Int
         let rotateByExif: Bool
+        let crop: Bool
     }
 
     enum ImageTypes: String {
@@ -76,19 +77,62 @@ class ImageUploader {
 
             var (width, height) = image.size
 
-            let adjustedImage: Image?
-            if width > height {
-                if width > option.maxWidth {
-                    adjustedImage = image.resizedTo(width: option.maxWidth, applySmoothing: true)
+            var adjustedImage: Image?
+            if width > option.maxWidth && height > option.maxHeight {
+                // both width and height oversized, need resize
+                if option.crop {
+                    // resize to short edge, then crop
+                    if width > height {
+                        adjustedImage = image.resizedTo(height: option.maxHeight, applySmoothing: true)
+                        if adjustedImage != nil {
+                            let (resizedWidth, resizedHeight) = adjustedImage!.size
+                            let cropX: Int
+                            if resizedWidth > resizedHeight * 3 {
+                                // use head part (may be a comic)
+                                cropX = 0
+                            } else {
+                                // use middle part
+                                cropX = (resizedWidth - option.maxWidth) / 2
+                            }
+                            adjustedImage = adjustedImage!.crop(x: cropX, y: 0, width: option.maxWidth, height: resizedHeight)
+                        }
+                    } else {
+                        adjustedImage = image.resizedTo(width: option.maxWidth, applySmoothing: true)
+                        if adjustedImage != nil {
+                            let (resizedWidth, resizedHeight) = adjustedImage!.size
+                            let cropY: Int
+                            if resizedHeight > resizedWidth * 3 {
+                                // use head part (may be a comic)
+                                cropY = 0
+                            } else {
+                                // use middle part
+                                cropY = (resizedHeight - option.maxHeight) / 2
+                            }
+                            adjustedImage = adjustedImage!.crop(x: 0, y: cropY, width: resizedWidth, height: option.maxHeight)
+                        }
+                    }
                 } else {
-                    adjustedImage = image
+                    // resize to long edge
+                    if width > height {
+                        adjustedImage = image.resizedTo(width: option.maxWidth, applySmoothing: true)
+                    } else {
+                        adjustedImage = image.resizedTo(height: option.maxHeight, applySmoothing: true)
+                    }
+                }
+            } else if width > option.maxWidth {
+                if option.crop {
+                    adjustedImage = image.crop(x: (width - option.maxWidth) / 2, y: 0, width: option.maxWidth, height: height)
+                } else {
+                    adjustedImage = image.resizedTo(width: option.maxWidth, applySmoothing: true)
+                }
+            } else if height > option.maxHeight {
+                if option.crop {
+                    adjustedImage = image.crop(x: 0, y: (height - option.maxHeight) / 2, width: width, height: option.maxHeight)
+                } else {
+                    adjustedImage = image.resizedTo(height: option.maxHeight, applySmoothing: true)
                 }
             } else {
-                if height > option.maxHeight {
-                    adjustedImage = image.resizedTo(height: option.maxHeight, applySmoothing: true)
-                } else {
-                    adjustedImage = image
-                }
+                adjustedImage = image
             }
 
             if adjustedImage == nil {
