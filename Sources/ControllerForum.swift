@@ -435,6 +435,7 @@ extension SiteController {
         }
 
         //TODO: upload dir
+        //TODO: upload type (topic, post, pm, chat)
 
         let imageVersions = [
             ImageUploader.ImageOptions(uploadDir: "", nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 100, rotateByExif: true, crop: false),
@@ -479,7 +480,7 @@ extension SiteController {
             }
         }
         success = true
-        return SiteResponse(status: .OK(view: "", data: results), session: session)
+        return SiteResponse(status: .OK(view: "uploaded.json", data: results), session: session)
     }
 
     // GET handlers
