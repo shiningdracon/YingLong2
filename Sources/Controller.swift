@@ -9,6 +9,7 @@ protocol UtilitiesProtocol {
     func sha1(string: String) -> String?
     func sha256(string: String) -> String?
     func forumHMAC(data: String, key: String) -> String?
+    func UUID() -> String
 }
 
 public enum WebFrameworkError: Error {
@@ -28,7 +29,7 @@ public class SessionInfo {
 
 public enum SiteResponseStatus {
     case Error(message: String)
-    case OK(view: String, data: [String: Any])
+    case OK(view: String, data: Any)
     case Redirect(location: String)
     case NotFound
 }

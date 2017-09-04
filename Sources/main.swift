@@ -122,7 +122,7 @@ class SiteMain {
             switch result.status {
             case .OK(view: let view, data: let data):
                 contxt.templatePath = "\(templatesDir)/\(view)"
-                contxt.extendValues(with: data)
+                contxt.extendValues(with: data as! [String: Any])
                 do {
                     try contxt.requestCompleted(withCollector: collector)
                     LogFile.info("[\(request.remoteAddress.host)] URI: \(request.uri)")
@@ -273,7 +273,7 @@ class SiteMain {
 
             response.setHeader(.contentType, value: "application/json; charset=utf-8")
             switch result.status {
-            case .OK(view: let view, data: let data):
+            case .OK(view: _, data: let data):
                 do {
                     let jsonDataValidated = try JSONSerialization.data(withJSONObject: data)
                     guard let jsonString = String(data: jsonDataValidated, encoding: .utf8) else {
@@ -339,14 +339,18 @@ extension SiteMain {
             return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: 1)
         })
 
-        addRouteMustache(method: .get, uri: "/page/{page}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/page/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
             let page = UInt32.init(request.urlVariables["page"] ?? "1") ?? 1
             return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: page)
         })
-        addRouteMustache(method: .get, uri: "/login", handler: { controller, session, request, response in return controller.loginPage(session: session as! ForumSessionInfo) })
-        addRouteMustache(method: .get, uri: "/forget", handler: { controller, session, request, response in return controller.forgetPage(session: session as! ForumSessionInfo) })
-        addRouteMustache(method: .post, uri: "/login", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/login", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            return controller.loginPage(session: session as! ForumSessionInfo)
+        })
+        addRouteMustache(method: .get, uri: "/forget", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            return controller.forgetPage(session: session as! ForumSessionInfo)
+        })
+        addRouteMustache(method: .post, uri: "/login", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             let username = request.param(name: "req_username") ?? ""
             let password = request.param(name: "req_password") ?? ""
             let savepass: Bool = (request.param(name: "save_pass") == "1") ? true : false
@@ -354,13 +358,10 @@ extension SiteMain {
             return controller.loginHandler(session: session as! ForumSessionInfo, username: username, password: password, savepass: savepass, redirectURL: "/")
         })
         addRouteMustache(method: .get, uri: "/logout", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let paramID = request.param(name: "id"), UInt32(paramID) != nil {
-                let csrf = request.param(name: "csrf_token") ?? ""
-                return controller.logoutHandler(session: session as! ForumSessionInfo, csrf: csrf)
-            }
-            return SiteResponse(status: .NotFound, session: session)
+            let csrf = request.param(name: "csrf_token") ?? ""
+            return controller.logoutHandler(session: session as! ForumSessionInfo, csrf: csrf)
         })
-        addRouteMustache(method: .get, uri: "/forum/{id}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/forum/{id}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let paramID = request.urlVariables["id"] {
                 if let id = UInt32(paramID) {
                     return controller.forumPage(session: session as! ForumSessionInfo, id: id, page: 1)
@@ -368,49 +369,62 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/forum/{id}/{page}", handler: { controller, session, request, response in
-            if let paramID = request.urlVariables["id"] {
-                if let id = UInt32(paramID) {
-                    let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
-                    return controller.forumPage(session: session as! ForumSessionInfo, id: id, page: page)
-                }
+        addRouteMustache(method: .get, uri: "/forum/{id}/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let paramId = UInt32(request.urlVariables["id"] ?? "0"), paramId > 0 {
+                let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
+                return controller.forumPage(session: session as! ForumSessionInfo, id: paramId, page: page)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/topic/{id}", handler: { controller, session, request, response in
-            if let paramID = request.urlVariables["id"] {
-                if let id = UInt32(paramID) {
-                    return controller.topicPage(session: session as! ForumSessionInfo, id: id, page: 1)
-                }
+        addRouteMustache(method: .get, uri: "/topic/{id}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let paramId = UInt32(request.urlVariables["id"] ?? "0"), paramId > 0 {
+                return controller.topicPage(session: session as! ForumSessionInfo, id: paramId, page: 1)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/topic/{id}/{page}", handler: { controller, session, request, response in
-            if let paramID = request.urlVariables["id"] {
-                if let id = UInt32(paramID) {
-                    let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
-                    return controller.topicPage(session: session as! ForumSessionInfo, id: id, page: page)
-                }
+        addRouteMustache(method: .get, uri: "/topic/{id}/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let paramId = UInt32(request.urlVariables["id"] ?? "0"), paramId > 0 {
+                let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
+                return controller.topicPage(session: session as! ForumSessionInfo, id: paramId, page: page)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/post/{pid}", handler: { controller, session, request, response in
-            if let postId = UInt32(request.urlVariables["pid"] ?? "0") {
+        addRouteMustache(method: .get, uri: "/post/{pid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let postId = UInt32(request.urlVariables["pid"] ?? "0"), postId > 0 {
                 return controller.topicPage(session: session as! ForumSessionInfo, postId: postId)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .post, uri: "/postreply/{tid}", handler: { controller, session, request, response in
-            if let topicId = UInt32(request.urlVariables["tid"] ?? "0") {
+        addRouteMustache(method: .post, uri: "/topic/{id}/postreply", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let topicId = UInt32(request.urlVariables["id"] ?? "0"), topicId > 0 {
                 if let message = request.param(name: "req_message") {
                     return controller.postReplyHandler(session: session as! ForumSessionInfo, topicId: topicId, message: message)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/draconity/{uid}", handler: { controller, session, request, response in
-            if let userId = UInt32(request.urlVariables["uid"] ?? "0") {
+        addRouteMustache(method: .get, uri: "/draconity/{uid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let userId = UInt32(request.urlVariables["uid"] ?? "0"), userId > 0 {
                 return controller.draconityPage(session: session as! ForumSessionInfo, userId: userId)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+
+        addRouteJson(method: .post, uri: "/{type}/{id}/upload", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let type = request.urlVariables["type"] {
+
+                if let id = UInt32(request.urlVariables["id"] ?? "0"), id > 0 {
+                    if let uploads = request.postFileUploads , uploads.count > 0 {
+                        var files: Array<(path: String, fileName: String, contentType: String)> = []
+                        for upload in uploads {
+                            if upload.file != nil {
+                                files.append((upload.tmpFileName, upload.fileName, upload.contentType))
+                            }
+                        }
+                        return controller.postFileHandler(session: session as! ForumSessionInfo, files: files)
+                    }
+                    return controller.errorNotifyPage(session: session, message: "No file uploaded")
+                }
             }
             return SiteResponse(status: .NotFound, session: session)
         })

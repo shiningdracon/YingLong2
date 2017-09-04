@@ -95,6 +95,8 @@ class UtilitiesPerfect: UtilitiesProtocol {
         }
     }
 
-
+    func UUID() -> String {
+        return PerfectLib.UUID().string
+    }
 
 }

@@ -3,7 +3,7 @@ import SwiftGD
 import Cryptor
 
 
-class ImageUploader {
+public class ImageUploader {
     public enum ImageUploadError: Error {
         case IOError(String)
         case TypeError
@@ -13,7 +13,7 @@ class ImageUploader {
 
     struct ImageOptions {
         let uploadDir: String
-        let newName: String
+        let nameSufix: String
         let maxWidth: Int
         let maxHeight: Int
         let quality: Int
@@ -32,28 +32,18 @@ class ImageUploader {
         self.imageVersions = imageVersions
     }
 
-    // return: new file path
-    func uploadByFile(path: String, contentType: String, fileName: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+    func uploadByFile(path: String, contentType: String, localNamePrefix: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
         var fileExtension: ImageTypes
         if contentType == "image/jpeg" {
             fileExtension = .jpg
         } else if contentType == "image/png" {
             fileExtension = .png
-        } else if contentType == "" {
-            let ext = fileName.filePathExtension
-            if ext == "jpg" || ext == "jpeg" {
-                fileExtension = .jpg
-            } else if ext == "png" {
-                fileExtension = .png
-            } else {
-                throw ImageUploadError.TypeError
-            }
         } else {
             throw ImageUploadError.TypeError
         }
 
         if let image = Image(url: URL(fileURLWithPath: path)) {
-            return try saveImage(image: image, ext: fileExtension)
+            return try saveImage(image: image, ext: fileExtension, localNamePrefix: localNamePrefix)
         } else {
             throw ImageUploadError.ValidationError
         }
@@ -67,11 +57,11 @@ class ImageUploader {
 
     }
 
-    private func saveImage(image: Image, ext: ImageTypes) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+    private func saveImage(image: Image, ext: ImageTypes, localNamePrefix: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
 
         var infos: Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> = []
         for option in imageVersions {
-            let fullName = option.newName + "." + ext.rawValue
+            let fullName = localNamePrefix + "_" + option.nameSufix + "." + ext.rawValue
             let fullPath = option.uploadDir + "/" + fullName
             let fileUrl = URL(fileURLWithPath: fullPath)
 

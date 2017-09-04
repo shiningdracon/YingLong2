@@ -422,7 +422,64 @@ extension SiteController {
         }
     }
 
-    public func postFileHandler(session: ForumSessionInfo, path: String) -> SiteResponse {
+    public func postFileHandler(session: ForumSessionInfo, files: Array<(path: String, fileName: String, contentType: String)>) -> SiteResponse {
+        var success = false
+        dataManager.transactionStart()
+
+        defer {
+            if success {
+                dataManager.transactionCommit()
+            } else {
+                dataManager.transactionRollback()
+            }
+        }
+
+        //TODO: upload dir
+
+        let imageVersions = [
+            ImageUploader.ImageOptions(uploadDir: "", nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 100, rotateByExif: true, crop: false),
+            ImageUploader.ImageOptions(uploadDir: "", nameSufix: "thumbnail", maxWidth: 300, maxHeight: 300, quality: 77, rotateByExif: true, crop: true)
+        ]
+        let uploader = ImageUploader(imageVersions: imageVersions)
+
+        var results: Array<Dictionary<String, Any>> = []
+        for file in files {
+            do {
+                var contentType = file.contentType
+                if contentType == "" {
+                    let ext = file.fileName.filePathExtension
+                    if ext == "jpg" || ext == "jpeg" {
+                        contentType = "image/jpeg"
+                    } else if ext == "png" {
+                        contentType = "image/png"
+                    }
+                }
+                let newNamePrefix = self.utilities.UUID()
+                let images = try uploader.uploadByFile(path: file.path, contentType: file.contentType, localNamePrefix: newNamePrefix)
+                for image in images {
+                    let fileId = try insertUploadedFile(fileName: file.fileName, localName: image.name, localDirectory: "", mimeType: contentType, size: UInt32(image.size), hash: image.hash, userId: session.userID)
+                    results.append([
+                        "id": fileId,
+                        "name": file.fileName,
+                        "path": image.path,
+                        "width": image.width,
+                        "height": image.height
+                        ])
+                }
+            } catch ImageUploader.ImageUploadError.IOError(let detail) {
+                return SiteResponse(status: .Error(message: detail), session: session)
+            } catch ImageUploader.ImageUploadError.OperationError(let detail) {
+                return SiteResponse(status: .Error(message: detail), session: session)
+            } catch ImageUploader.ImageUploadError.TypeError {
+                return SiteResponse(status: .Error(message: "File type not supported"), session: session)
+            } catch ImageUploader.ImageUploadError.ValidationError {
+                return SiteResponse(status: .Error(message: "Invalid file"), session: session)
+            } catch {
+                return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+            }
+        }
+        success = true
+        return SiteResponse(status: .OK(view: "", data: results), session: session)
     }
 
     // GET handlers
