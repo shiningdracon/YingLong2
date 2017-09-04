@@ -294,9 +294,9 @@ extension SiteController {
         }
     }
 
-    public func uploadFile(fileName: String, localName: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) throws -> UInt32 {
+    public func insertUploadedFile(fileName: String, localName: String, localDirectory: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) throws -> UInt32 {
         let now = UInt32(self.utilities.getNow())
-        return try self.dataManager.insertUpload(fileName: fileName, localName: localName, mimeType: mimeType, size: size, hash: hash, userId: userId, createTime: now)
+        return try self.dataManager.insertUpload(fileName: fileName, localName: localName, localDirectory: localDirectory, mimeType: mimeType, size: size, hash: hash, userId: userId, createTime: now)
     }
 
     // POST handlers
@@ -420,6 +420,9 @@ extension SiteController {
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
+    }
+
+    public func postFileHandler(session: ForumSessionInfo, path: String) -> SiteResponse {
     }
 
     // GET handlers

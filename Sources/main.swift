@@ -79,6 +79,7 @@ class SiteMain {
             let request = contxt.webRequest
             let response = contxt.webResponse
             let templatesDir = "./views"
+
             let locale: i18nLocale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
 
             let session: ForumSessionInfo = ForumSessionInfo(remoteAddress: request.remoteAddress.host, locale: locale, userID: 0, passwordHash: "", expirationTime: 0, sessionHash: "")
@@ -224,9 +225,85 @@ class SiteMain {
         }
     }
 
-    func addRoute(method: HTTPMethod, uri: String, handler: @escaping PageHandler) {
-        routes.add(method: method, uri: uri, handler: { request, response in
+    func addRouteMustache(method: HTTPMethod, uri: String, handler: @escaping PageHandler) {
+        routes.add(method: method, uri: uri, handler: { (request: HTTPRequest, response: HTTPResponse) in
             mustacheRequest(request: request, response: response, handler: CommonHandler(pageHandler: handler, util: self.utilities, databaseConfig: self.databaseConfig, siteConfig: self.siteConfig, memoryStorage: self.memoryStorage), templatePath: "")
+        })
+    }
+
+    func addRouteJson(method: HTTPMethod, uri: String, handler: @escaping PageHandler) {
+        routes.add(method: method, uri: uri, handler: { (request: HTTPRequest, response: HTTPResponse) in
+            let locale: i18nLocale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
+
+            let session: ForumSessionInfo = ForumSessionInfo(remoteAddress: request.remoteAddress.host, locale: locale, userID: 0, passwordHash: "", expirationTime: 0, sessionHash: "")
+
+            let cookies = request.cookies
+            for cookie in cookies {
+                if cookie.0 == self.siteConfig.cookieName {
+                    let value = cookie.1
+                    let properties = value.characters.split(separator: "|").map(String.init)
+                    if properties.count == 4 {
+                        if let userId = UInt32.init(properties[0]), let expirationTime = Double.init(properties[2]) {
+                            session.userID = userId
+                            session.passwordHash = properties[1]
+                            session.expirationTime = expirationTime
+                            session.sessionHash = properties[3]
+                        }
+                    }
+                }
+            }
+
+            guard let mysql = MySQLPerfect(host: self.databaseConfig.host, user: self.databaseConfig.user, passwd: self.databaseConfig.password, dbname: self.databaseConfig.dbname) else {
+                LogFile.error("Database init failed")
+                return
+            }
+            let dbStorage = DatabaseStorage(database: mysql, prefix: self.databaseConfig.tablePrefix)
+            let data = DataManager(dbStorage: dbStorage, memoryStorage: self.memoryStorage)
+            let controller = SiteController(util: self.utilities, data: data)
+            controller.siteConfig["cookieSeed"] = self.siteConfig.cookieSeed
+
+            let result = handler(controller, session, request, response)
+
+            if let responseSession = result.session as? ForumSessionInfo {
+                let value = "\(responseSession.userID)|\(responseSession.passwordHash)|\(responseSession.expirationTime)|\(responseSession.sessionHash))"
+                response.addCookie(HTTPCookie(name: self.siteConfig.cookieName, value: value, domain: self.siteConfig.cookieDomain, expires: HTTPCookie.Expiration.relativeSeconds(Int(responseSession.expirationTime)), path: nil, secure: self.siteConfig.cookieSecure, httpOnly: true))
+            } else {
+                response.addCookie(HTTPCookie(name: self.siteConfig.cookieName, value: "", domain: self.siteConfig.cookieDomain, expires: HTTPCookie.Expiration.absoluteSeconds(0), path: nil, secure: self.siteConfig.cookieSecure, httpOnly: true))
+            }
+
+            response.setHeader(.contentType, value: "application/json; charset=utf-8")
+            switch result.status {
+            case .OK(view: let view, data: let data):
+                do {
+                    let jsonDataValidated = try JSONSerialization.data(withJSONObject: data)
+                    guard let jsonString = String(data: jsonDataValidated, encoding: .utf8) else {
+                        return
+                    }
+                    response.status = .ok
+                    response.appendBody(string: jsonString)
+                    response.completed()
+                    LogFile.info("[\(request.remoteAddress.host)] URI: \(request.uri)")
+                } catch {
+                    response.status = .internalServerError
+                    response.appendBody(string: "Service error")
+                    response.completed()
+                    LogFile.error("[\(request.remoteAddress.host)] \(error)")
+                }
+            case .Redirect(location: let location):
+                response.status = .found
+                response.setHeader(HTTPResponseHeader.Name.location, value: location)
+                response.completed()
+            case .NotFound:
+                response.status = .notFound
+                response.appendBody(string: "Not found")
+                response.completed()
+                LogFile.warning("[\(request.remoteAddress.host)] Not found: \(request.uri)")
+            case .Error(message: let message):
+                response.status = .internalServerError
+                response.appendBody(string: "Service error")
+                response.completed()
+                LogFile.error("[\(request.remoteAddress.host)] URI: \(request.uri), error: \(message)")
+            }
         })
     }
 
@@ -257,33 +334,33 @@ class SiteMain {
 
 extension SiteMain {
     func setupForumRoutes() {
-        addRoute(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
             return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: 1)
         })
 
-        addRoute(method: .get, uri: "/page/{page}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/page/{page}", handler: { controller, session, request, response in
             let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
             let page = UInt32.init(request.urlVariables["page"] ?? "1") ?? 1
             return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: page)
         })
-        addRoute(method: .get, uri: "/login", handler: { controller, session, request, response in return controller.loginPage(session: session as! ForumSessionInfo) })
-        addRoute(method: .get, uri: "/forget", handler: { controller, session, request, response in return controller.forgetPage(session: session as! ForumSessionInfo) })
-        addRoute(method: .post, uri: "/login", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/login", handler: { controller, session, request, response in return controller.loginPage(session: session as! ForumSessionInfo) })
+        addRouteMustache(method: .get, uri: "/forget", handler: { controller, session, request, response in return controller.forgetPage(session: session as! ForumSessionInfo) })
+        addRouteMustache(method: .post, uri: "/login", handler: { controller, session, request, response in
             let username = request.param(name: "req_username") ?? ""
             let password = request.param(name: "req_password") ?? ""
             let savepass: Bool = (request.param(name: "save_pass") == "1") ? true : false
             let location = request.param(name: "redirect_url") ?? "/" //TODO: validate
             return controller.loginHandler(session: session as! ForumSessionInfo, username: username, password: password, savepass: savepass, redirectURL: "/")
         })
-        addRoute(method: .get, uri: "/logout", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/logout", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let paramID = request.param(name: "id"), UInt32(paramID) != nil {
                 let csrf = request.param(name: "csrf_token") ?? ""
                 return controller.logoutHandler(session: session as! ForumSessionInfo, csrf: csrf)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .get, uri: "/forum/{id}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/forum/{id}", handler: { controller, session, request, response in
             if let paramID = request.urlVariables["id"] {
                 if let id = UInt32(paramID) {
                     return controller.forumPage(session: session as! ForumSessionInfo, id: id, page: 1)
@@ -291,7 +368,7 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .get, uri: "/forum/{id}/{page}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/forum/{id}/{page}", handler: { controller, session, request, response in
             if let paramID = request.urlVariables["id"] {
                 if let id = UInt32(paramID) {
                     let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
@@ -300,7 +377,7 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .get, uri: "/topic/{id}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/topic/{id}", handler: { controller, session, request, response in
             if let paramID = request.urlVariables["id"] {
                 if let id = UInt32(paramID) {
                     return controller.topicPage(session: session as! ForumSessionInfo, id: id, page: 1)
@@ -308,7 +385,7 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .get, uri: "/topic/{id}/{page}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/topic/{id}/{page}", handler: { controller, session, request, response in
             if let paramID = request.urlVariables["id"] {
                 if let id = UInt32(paramID) {
                     let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
@@ -317,13 +394,13 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .get, uri: "/post/{pid}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/post/{pid}", handler: { controller, session, request, response in
             if let postId = UInt32(request.urlVariables["pid"] ?? "0") {
                 return controller.topicPage(session: session as! ForumSessionInfo, postId: postId)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .post, uri: "/postreply/{tid}", handler: { controller, session, request, response in
+        addRouteMustache(method: .post, uri: "/postreply/{tid}", handler: { controller, session, request, response in
             if let topicId = UInt32(request.urlVariables["tid"] ?? "0") {
                 if let message = request.param(name: "req_message") {
                     return controller.postReplyHandler(session: session as! ForumSessionInfo, topicId: topicId, message: message)
@@ -331,7 +408,7 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRoute(method: .get, uri: "/draconity/{uid}", handler: { controller, session, request, response in
+        addRouteMustache(method: .get, uri: "/draconity/{uid}", handler: { controller, session, request, response in
             if let userId = UInt32(request.urlVariables["uid"] ?? "0") {
                 return controller.draconityPage(session: session as! ForumSessionInfo, userId: userId)
             }
@@ -340,7 +417,7 @@ extension SiteMain {
     }
 
     func setupComicRoutes() {
-        addRoute(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 return controller.viewComic(session: session, comicId: cid)
@@ -350,7 +427,7 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .post, uri: "/comic/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             let title = request.param(name: "title") ?? ""
             let author = request.param(name: "author") ?? ""
@@ -358,14 +435,14 @@ extension SiteMain {
             return controller.postAddComic(session: session, title: title, author: author, description: description)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 return controller.editComic(session: session, comicId: cid)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .post, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 let title = request.param(name: "title") ?? ""
                 let author = request.param(name: "author") ?? ""
@@ -375,7 +452,7 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/comic/{cid}/page/{pidx}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
@@ -389,7 +466,7 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRoute(method: .post, uri: "/comic/{cid}/page/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .post, uri: "/comic/{cid}/page/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let uploads = request.postFileUploads , uploads.count > 0 {
@@ -441,7 +518,7 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
         
-        addRoute(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/comic/{cid}/page/{pidx}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {
@@ -451,7 +528,7 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
         
-        addRoute(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .post, uri: "/comic/{cid}/page/{pidx}/update", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let pidx = UInt32(request.urlVariables["pidx"] ?? "0"), pidx > 0 {

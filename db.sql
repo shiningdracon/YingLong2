@@ -40,32 +40,36 @@ create table uploaded_files(
 	`created` int(10) unsigned NOT NULL,
 	`file_name` varchar(1024) NOT NULL,
 	`local_name` varchar(1024) NOT NULL,
-	`size` int(10) unsigned NOT NULL
-	`hash` char(128) DEFAULT NULL,
+	`local_dir` varchar(1024) NOT NULL,
+	`size` int(10) unsigned NOT NULL,
+	`hash` varchar(128) NOT NULL,
 	`mime_type` varchar(16) NOT NULL,
 	`user_id` int(10) unsigned,
 	PRIMARY KEY (`id`),
-	KEY `Hash` (`size`,`hash`) USING BTREE,
+	KEY `map` (`size`,`hash`) USING BTREE
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
 create table folders(
 	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+	`name` varchar(50) NOT NULL,
+	`description` TEXT,
+	PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
 create table file_in_folder(
 	`file_id` int(10) unsigned NOT NULL,
 	`folder_id` int(10) unsigned NOT NULL,
-	KEY `map` (`file_id`,`folder_id`) USING BTREE,
+	KEY `map` (`file_id`,`folder_id`) USING BTREE
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
 create table file_in_post(
 	`file_id` int(10) unsigned NOT NULL,
 	`post_id` int(10) unsigned NOT NULL,
-	KEY `map` (`file_id`,`post_id`) USING BTREE,
+	KEY `map` (`file_id`,`post_id`) USING BTREE
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
 create table file_in_comic_page(
 	`file_id` int(10) unsigned NOT NULL,
 	`page_id` int(10) unsigned NOT NULL,
-	KEY `map` (`file_id`,`page_id`) USING BTREE,
+	KEY `map` (`file_id`,`page_id`) USING BTREE
 ) ENGINE=InnoDB CHARACTER SET=utf8;
