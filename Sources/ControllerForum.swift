@@ -434,9 +434,7 @@ extension SiteController {
             guard let user = try getCurrentUser(session: session) else {
                 return errorNotifyPage(session: session, message: "No permission")
             }
-            guard let group = dataManager.getGroup(id: user.group_id) else  {
-                return errorNotifyPage(session: session, message: "No permission")
-            }
+
             if user.isGuest() {
                 return errorNotifyPage(session: session, message: "No permission")
             }
@@ -538,9 +536,7 @@ extension SiteController {
             guard let user = try getCurrentUser(session: session) else {
                 return errorNotifyPage(session: session, message: "No permission")
             }
-            guard let group = dataManager.getGroup(id: user.group_id) else  {
-                return errorNotifyPage(session: session, message: "No permission")
-            }
+
             if user.isGuest() {
                 return errorNotifyPage(session: session, message: "No permission")
             }
