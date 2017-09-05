@@ -29,12 +29,15 @@ extension MemoryStorage {
         return storage["newest topics"] as! [YLDBtopics]
     }
 
-    func initMemoryStorageForum(_ forumdb: DatabaseStorage) throws {
-        guard let configs: [String: String] = forumdb.getAllConfigs() else {
+    func loadConfigs(_ forumDb: DatabaseStorage) throws {
+        guard let configs: [String: String] = forumDb.getAllConfigs() else {
             throw MemoryStorageError.initFailed
         }
+        self.storage["configs"] = configs
+    }
 
-        guard let _users = forumdb.getAllUsers() else {
+    func loadUsers(_ forumDb: DatabaseStorage) throws {
+        guard let _users = forumDb.getAllUsers() else {
             throw MemoryStorageError.initFailed
         }
         var users: [UInt32: YLDBusers] = [:]
@@ -42,8 +45,11 @@ extension MemoryStorage {
             let oneuser = YLDBusers(row)
             users[oneuser.id] = oneuser
         }
+        self.storage["users"] = users
+    }
 
-        guard let _forums = forumdb.getAllForums() else {
+    func loadForums(_ forumDb: DatabaseStorage) throws {
+        guard let _forums = forumDb.getAllForums() else {
             throw MemoryStorageError.initFailed
         }
         var forums: [UInt32: YLDBforums]  = [:]
@@ -51,8 +57,11 @@ extension MemoryStorage {
             let oneforum = YLDBforums(row)
             forums[oneforum.id] = oneforum
         }
+        self.storage["forums"] = forums
+    }
 
-        guard let _groups = forumdb.getAllGroups() else {
+    func loadGroups(_ forumDb: DatabaseStorage) throws {
+        guard let _groups = forumDb.getAllGroups() else {
             throw MemoryStorageError.initFailed
         }
         var groups: [UInt32: YLDBgroups] = [:]
@@ -60,8 +69,11 @@ extension MemoryStorage {
             let onegroup = YLDBgroups(row)
             groups[onegroup.g_id] = onegroup
         }
+        self.storage["groups"] = groups
+    }
 
-        guard let _permissions = forumdb.getAllPermissions() else {
+    func loadPermissions(_ forumDb: DatabaseStorage) throws {
+        guard let _permissions = forumDb.getAllPermissions() else {
             throw MemoryStorageError.initFailed
         }
         var permissions: [YLDBforum_perms] = []
@@ -69,29 +81,37 @@ extension MemoryStorage {
             let oneperm = YLDBforum_perms(row)
             permissions.append(oneperm)
         }
+        self.storage["permissions"] = permissions
+    }
 
-        guard let _info = forumdb.getForumInfo() else {
+    func loadInfo(_ forumDb: DatabaseStorage) throws {
+        guard let _info = forumDb.getForumInfo() else {
             throw MemoryStorageError.initFailed
         }
         let info = YLDBsite_info(_info)
+        self.storage["site info"] = info
+    }
 
+    func loadNewestTopics(_ forumDb: DatabaseStorage) throws {
         // TODO: range
-        guard let _newestTopics = forumdb.getTopics(forumIds: [UInt32](1...15), startFrom: 0, limit: 5) else {
+        guard let _newestTopics = forumDb.getTopics(forumIds: [UInt32](1...15), startFrom: 0, limit: 5) else {
             throw MemoryStorageError.initFailed
         }
-
         var newestTopics: [YLDBtopics] = []
         for row in _newestTopics {
             let t = YLDBtopics(row)
             newestTopics.append(t)
         }
-
-        self.storage["configs"] = configs
-        self.storage["users"] = users
-        self.storage["forums"] = forums
-        self.storage["groups"] = groups
-        self.storage["permissions"] = permissions
-        self.storage["site info"] = info
         self.storage["newest topics"] = newestTopics
+    }
+
+    func initMemoryStorageForum(_ forumDb: DatabaseStorage) throws {
+        try loadConfigs(forumDb)
+        try loadUsers(forumDb)
+        try loadForums(forumDb)
+        try loadGroups(forumDb)
+        try loadPermissions(forumDb)
+        try loadInfo(forumDb)
+        try loadNewestTopics(forumDb)
     }
 }

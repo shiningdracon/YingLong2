@@ -32,7 +32,7 @@ public class ImageUploader {
         self.imageVersions = imageVersions
     }
 
-    func uploadByFile(path: String, contentType: String, localNamePrefix: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+    func uploadByFile(path: String, contentType: String, localMainName: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
         var fileExtension: ImageTypes
         if contentType == "image/jpeg" {
             fileExtension = .jpg
@@ -43,7 +43,7 @@ public class ImageUploader {
         }
 
         if let image = Image(url: URL(fileURLWithPath: path)) {
-            return try saveImage(image: image, ext: fileExtension, localNamePrefix: localNamePrefix)
+            return try saveImage(image: image, ext: fileExtension, localMainName: localMainName)
         } else {
             throw ImageUploadError.ValidationError
         }
@@ -57,11 +57,11 @@ public class ImageUploader {
 
     }
 
-    private func saveImage(image: Image, ext: ImageTypes, localNamePrefix: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
+    private func saveImage(image: Image, ext: ImageTypes, localMainName: String) throws -> Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> {
 
         var infos: Array<(path: String, name: String, size: Int, hash: String, width: Int, height: Int)> = []
         for option in imageVersions {
-            let fullName = localNamePrefix + "_" + option.nameSufix + "." + ext.rawValue
+            let fullName = localMainName + "_" + option.nameSufix + "." + ext.rawValue
             let fullPath = option.uploadDir + "/" + fullName
             let fileUrl = URL(fileURLWithPath: fullPath)
 

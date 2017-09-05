@@ -422,65 +422,155 @@ extension SiteController {
         }
     }
 
-    public func postFileHandler(session: ForumSessionInfo, files: Array<(path: String, fileName: String, contentType: String)>) -> SiteResponse {
-        var success = false
-        dataManager.transactionStart()
+    public enum ForumUploadModule {
+        case gallery
+        case post
+        case privateMessage
+        case chat
+    }
 
-        defer {
-            if success {
-                dataManager.transactionCommit()
-            } else {
-                dataManager.transactionRollback()
+    public func postFileHandler(session: ForumSessionInfo, module: ForumUploadModule, files: Array<(path: String, fileName: String, contentType: String, trackingId: String)>) -> SiteResponse {
+        do {
+            guard let user = try getCurrentUser(session: session) else {
+                return errorNotifyPage(session: session, message: "No permission")
             }
+            guard let group = dataManager.getGroup(id: user.group_id) else  {
+                return errorNotifyPage(session: session, message: "No permission")
+            }
+            if user.isGuest() {
+                return errorNotifyPage(session: session, message: "No permission")
+            }
+
+            let imageVersions: Array<ImageUploader.ImageOptions>
+            switch module {
+            case .gallery:
+                imageVersions = [
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["galleryUploadDir"]! + "/\(user.id)/", nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 100, rotateByExif: true, crop: false),
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["galleryUploadDir"]! + "/\(user.id)/", nameSufix: "thumbnail", maxWidth: 150, maxHeight: 150, quality: 77, rotateByExif: true, crop: true)
+                ]
+            case .post:
+                imageVersions = [
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["postUploadDir"]!, nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 77, rotateByExif: true, crop: false),
+                ]
+            case .privateMessage:
+                imageVersions = [
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["privateMessageUploadDir"]!, nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 77, rotateByExif: true, crop: false),
+                ]
+            case .chat:
+                imageVersions = [
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["chatUploadDir"]!, nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 77, rotateByExif: true, crop: false),
+                ]
+            }
+
+            var success = false
+            dataManager.transactionStart()
+
+            defer {
+                if success {
+                    dataManager.transactionCommit()
+                } else {
+                    dataManager.transactionRollback()
+                }
+            }
+
+            let uploader = ImageUploader(imageVersions: imageVersions)
+
+            var results: Array<Dictionary<String, Any>> = []
+            for file in files {
+                do {
+                    var contentType = file.contentType
+                    if contentType == "" {
+                        let ext = file.fileName.filePathExtension
+                        if ext == "jpg" || ext == "jpeg" {
+                            contentType = "image/jpeg"
+                        } else if ext == "png" {
+                            contentType = "image/png"
+                        }
+                    }
+                    let newMainName = self.utilities.UUID()
+                    let images = try uploader.uploadByFile(path: file.path, contentType: file.contentType, localMainName: newMainName)
+                    for image in images {
+                        let fileId = try insertUploadedFile(fileName: file.fileName, localName: image.name, localDirectory: "", mimeType: contentType, size: UInt32(image.size), hash: image.hash, userId: user.id)
+                        results.append([
+                            "tracking": file.trackingId,
+                            "id": fileId,
+                            "name": file.fileName,
+                            "path": image.path,
+                            "width": image.width,
+                            "height": image.height
+                            ])
+                    }
+                } catch ImageUploader.ImageUploadError.IOError(let detail) {
+                    return SiteResponse(status: .Error(message: detail), session: session)
+                } catch ImageUploader.ImageUploadError.OperationError(let detail) {
+                    return SiteResponse(status: .Error(message: detail), session: session)
+                } catch ImageUploader.ImageUploadError.TypeError {
+                    results.append([
+                        "tracking": file.trackingId,
+                        "error": "File type not supported"
+                        ])
+                } catch ImageUploader.ImageUploadError.ValidationError {
+                    results.append([
+                        "tracking": file.trackingId,
+                        "error": "Invalid image"
+                        ])
+                } catch {
+                    return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+                }
+            }
+            success = true
+            return SiteResponse(status: .OK(view: "uploaded.json", data: results), session: session)
+
+        } catch is DataError {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
+    }
 
-        //TODO: upload dir
-        //TODO: upload type (topic, post, pm, chat)
-
+    public func postAvatarUploadHandler(session: ForumSessionInfo, file: (path: String, fileName: String, contentType: String)) -> SiteResponse {
         let imageVersions = [
-            ImageUploader.ImageOptions(uploadDir: "", nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 100, rotateByExif: true, crop: false),
-            ImageUploader.ImageOptions(uploadDir: "", nameSufix: "thumbnail", maxWidth: 300, maxHeight: 300, quality: 77, rotateByExif: true, crop: true)
+            ImageUploader.ImageOptions(uploadDir: siteConfig["avatarUploadDir"]!, nameSufix: "avatar", maxWidth: 120, maxHeight: 120, quality: 77, rotateByExif: true, crop: true),
         ]
         let uploader = ImageUploader(imageVersions: imageVersions)
 
-        var results: Array<Dictionary<String, Any>> = []
-        for file in files {
-            do {
-                var contentType = file.contentType
-                if contentType == "" {
-                    let ext = file.fileName.filePathExtension
-                    if ext == "jpg" || ext == "jpeg" {
-                        contentType = "image/jpeg"
-                    } else if ext == "png" {
-                        contentType = "image/png"
-                    }
-                }
-                let newNamePrefix = self.utilities.UUID()
-                let images = try uploader.uploadByFile(path: file.path, contentType: file.contentType, localNamePrefix: newNamePrefix)
-                for image in images {
-                    let fileId = try insertUploadedFile(fileName: file.fileName, localName: image.name, localDirectory: "", mimeType: contentType, size: UInt32(image.size), hash: image.hash, userId: session.userID)
-                    results.append([
-                        "id": fileId,
-                        "name": file.fileName,
-                        "path": image.path,
-                        "width": image.width,
-                        "height": image.height
-                        ])
-                }
-            } catch ImageUploader.ImageUploadError.IOError(let detail) {
-                return SiteResponse(status: .Error(message: detail), session: session)
-            } catch ImageUploader.ImageUploadError.OperationError(let detail) {
-                return SiteResponse(status: .Error(message: detail), session: session)
-            } catch ImageUploader.ImageUploadError.TypeError {
-                return SiteResponse(status: .Error(message: "File type not supported"), session: session)
-            } catch ImageUploader.ImageUploadError.ValidationError {
-                return SiteResponse(status: .Error(message: "Invalid file"), session: session)
-            } catch {
-                return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+        do {
+            guard let user = try getCurrentUser(session: session) else {
+                return errorNotifyPage(session: session, message: "No permission")
             }
+            guard let group = dataManager.getGroup(id: user.group_id) else  {
+                return errorNotifyPage(session: session, message: "No permission")
+            }
+            if user.isGuest() {
+                return errorNotifyPage(session: session, message: "No permission")
+            }
+
+            var contentType = file.contentType
+            if contentType == "" {
+                let ext = file.fileName.filePathExtension
+                if ext == "jpg" || ext == "jpeg" {
+                    contentType = "image/jpeg"
+                } else if ext == "png" {
+                    contentType = "image/png"
+                }
+            }
+            let newMainName = String(user.id)
+            let _ = try uploader.uploadByFile(path: file.path, contentType: file.contentType, localMainName: newMainName)
+
+            return SiteResponse(status: .Redirect(location: "/user/\(user.id)"), session: session)
+        } catch ImageUploader.ImageUploadError.IOError(let detail) {
+            return SiteResponse(status: .Error(message: detail), session: session)
+        } catch ImageUploader.ImageUploadError.OperationError(let detail) {
+            return SiteResponse(status: .Error(message: detail), session: session)
+        } catch ImageUploader.ImageUploadError.TypeError {
+            return errorNotifyPage(session: session, message: "Image type not supported")
+        } catch ImageUploader.ImageUploadError.ValidationError {
+            return errorNotifyPage(session: session, message: "Invalid image")
+        } catch is DataError {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
-        success = true
-        return SiteResponse(status: .OK(view: "uploaded.json", data: results), session: session)
     }
 
     // GET handlers

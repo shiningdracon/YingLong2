@@ -27,6 +27,11 @@ class SiteMain {
 
     struct SiteConfig {
         var uploadSizeLimit: Int
+        var galleryUploadDir: String
+        var postUploadDir: String
+        var privateMessageUploadDir: String
+        var chatUploadDir: String
+        var avatarUploadDir: String
         var cookieName: String
         var cookieDomain: String
         var cookiePath: String
@@ -108,6 +113,11 @@ class SiteMain {
             let data = DataManager(dbStorage: dbStorage, memoryStorage: self.memoryStorage)
             let controller = SiteController(util: utilities, data: data)
             controller.siteConfig["cookieSeed"] = siteConfig.cookieSeed
+            controller.siteConfig["galleryUploadDir"] = siteConfig.galleryUploadDir
+            controller.siteConfig["postUploadDir"] = siteConfig.postUploadDir
+            controller.siteConfig["privateMessageUploadDir"] = siteConfig.privateMessageUploadDir
+            controller.siteConfig["chatUploadDir"] = siteConfig.chatUploadDir
+            controller.siteConfig["avatarUploadDir"] = siteConfig.avatarUploadDir
 
             let result = self.pageHandler(controller, session, request, response)
 
@@ -185,6 +195,11 @@ class SiteMain {
                     let siteConfigJSON = json["siteConfig"] as? [String: Any],
                     let uploadSizeLimitString = siteConfigJSON["uploadSizeLimit"] as? String,
                     let uploadSizeLimit = Int(uploadSizeLimitString),
+                    let galleryUploadDir = siteConfigJSON["galleryUploadDir"] as? String,
+                    let postUploadDir = siteConfigJSON["postUploadDir"] as? String,
+                    let privateMessageUploadDir = siteConfigJSON["privateMessageUploadDir"] as? String,
+                    let chatUploadDir = siteConfigJSON["chatUploadDir"] as? String,
+                    let avatarUploadDir = siteConfigJSON["avatarUploadDir"] as? String,
 
                     let cookieName = siteConfigJSON["cookieName"] as? String,
                     let cookieDomain = siteConfigJSON["cookieDomain"] as? String,
@@ -195,7 +210,7 @@ class SiteMain {
                 {
                     self.databaseConfig = DatabaseConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
                     self.serverConfig = ServerConfig(address: address, port: port, sslCertificatePath: sslCertificatePath, sslKeyPath: sslKeyPath, enableHTTP2: enableHTTP2)
-                    self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit, cookieName: cookieName, cookieDomain: cookieDomain, cookiePath: cookiePath, cookieSecure: cookieSecure, cookieSeed: cookieSeed)
+                    self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit, galleryUploadDir: galleryUploadDir, postUploadDir: postUploadDir, privateMessageUploadDir: privateMessageUploadDir, chatUploadDir: chatUploadDir, avatarUploadDir: avatarUploadDir, cookieName: cookieName, cookieDomain: cookieDomain, cookiePath: cookiePath, cookieSecure: cookieSecure, cookieSeed: cookieSeed)
                 } else {
                     fatalError("Load config failed")
                 }
@@ -261,6 +276,11 @@ class SiteMain {
             let data = DataManager(dbStorage: dbStorage, memoryStorage: self.memoryStorage)
             let controller = SiteController(util: self.utilities, data: data)
             controller.siteConfig["cookieSeed"] = self.siteConfig.cookieSeed
+            controller.siteConfig["galleryUploadDir"] = self.siteConfig.galleryUploadDir
+            controller.siteConfig["postUploadDir"] = self.siteConfig.postUploadDir
+            controller.siteConfig["privateMessageUploadDir"] = self.siteConfig.privateMessageUploadDir
+            controller.siteConfig["chatUploadDir"] = self.siteConfig.chatUploadDir
+            controller.siteConfig["avatarUploadDir"] = self.siteConfig.avatarUploadDir
 
             let result = handler(controller, session, request, response)
 
@@ -410,21 +430,41 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRouteJson(method: .post, uri: "/{type}/{id}/upload", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let type = request.urlVariables["type"] {
+        addRouteJson(method: .post, uri: "/{module}/{id}/upload", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let moduleString = request.urlVariables["module"] {
+                let module: SiteController.ForumUploadModule
+                switch moduleString {
+                case "forum":
+                    module = .gallery
+                case "topic":
+                    module = .post
+                case "message":
+                    module = .privateMessage
+                case "chat":
+                    module = .chat
+                default:
+                    return SiteResponse(status: .NotFound, session: session)
+                }
 
                 if let id = UInt32(request.urlVariables["id"] ?? "0"), id > 0 {
                     if let uploads = request.postFileUploads , uploads.count > 0 {
-                        var files: Array<(path: String, fileName: String, contentType: String)> = []
+                        var files: Array<(path: String, fileName: String, contentType: String, trackingId: String)> = []
                         for upload in uploads {
                             if upload.file != nil {
-                                files.append((upload.tmpFileName, upload.fileName, upload.contentType))
+                                files.append((path: upload.tmpFileName, fileName: upload.fileName, contentType: upload.contentType, trackingId: upload.fieldName))
                             }
                         }
-                        return controller.postFileHandler(session: session as! ForumSessionInfo, files: files)
+                        return controller.postFileHandler(session: session as! ForumSessionInfo, module: module, files: files)
                     }
                     return controller.errorNotifyPage(session: session, message: "No file uploaded")
                 }
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+
+        addRouteMustache(method: .post, uri: "/user/avatar/upload", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let uploads = request.postFileUploads , uploads.count == 1 {
+                return controller.postAvatarUploadHandler(session: session as! ForumSessionInfo, file: (path: uploads[0].tmpFileName, fileName: uploads[0].fileName, contentType: uploads[0].contentType))
             }
             return SiteResponse(status: .NotFound, session: session)
         })
