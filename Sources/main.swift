@@ -448,10 +448,10 @@ extension SiteMain {
 
                 if let id = UInt32(request.urlVariables["id"] ?? "0"), id > 0 {
                     if let uploads = request.postFileUploads , uploads.count > 0 {
-                        var files: Array<(path: String, fileName: String, contentType: String, trackingId: String)> = []
+                        var files: Array<(path: String, fileName: String, trackingId: String)> = []
                         for upload in uploads {
                             if upload.file != nil {
-                                files.append((path: upload.tmpFileName, fileName: upload.fileName, contentType: upload.contentType, trackingId: upload.fieldName))
+                                files.append((path: upload.tmpFileName, fileName: upload.fileName, trackingId: upload.fieldName))
                             }
                         }
                         return controller.postFileHandler(session: session as! ForumSessionInfo, module: module, files: files)
@@ -464,7 +464,7 @@ extension SiteMain {
 
         addRouteMustache(method: .post, uri: "/user/avatar/upload", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let uploads = request.postFileUploads , uploads.count == 1 {
-                return controller.postAvatarUploadHandler(session: session as! ForumSessionInfo, file: (path: uploads[0].tmpFileName, fileName: uploads[0].fileName, contentType: uploads[0].contentType))
+                return controller.postAvatarUploadHandler(session: session as! ForumSessionInfo, file: (path: uploads[0].tmpFileName, fileName: uploads[0].fileName))
             }
             return SiteResponse(status: .NotFound, session: session)
         })

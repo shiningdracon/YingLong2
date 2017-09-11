@@ -1,4 +1,5 @@
 import Foundation
+import ImageUploader
 
 public class ForumSessionInfo: SessionInfo {
     var userID: UInt32
@@ -429,7 +430,7 @@ extension SiteController {
         case chat
     }
 
-    public func postFileHandler(session: ForumSessionInfo, module: ForumUploadModule, files: Array<(path: String, fileName: String, contentType: String, trackingId: String)>) -> SiteResponse {
+    public func postFileHandler(session: ForumSessionInfo, module: ForumUploadModule, files: Array<(path: String, fileName: String, trackingId: String)>) -> SiteResponse {
         do {
             guard let user = try getCurrentUser(session: session) else {
                 return errorNotifyPage(session: session, message: "No permission")
@@ -443,7 +444,7 @@ extension SiteController {
             switch module {
             case .gallery:
                 imageVersions = [
-                    ImageUploader.ImageOptions(uploadDir: siteConfig["galleryUploadDir"]! + "/\(user.id)/", nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 100, rotateByExif: true, crop: false),
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["galleryUploadDir"]! + "/\(user.id)/", nameSufix: "", maxWidth: 2048, maxHeight: Int.max, quality: 100, rotateByExif: true, crop: false),
                     ImageUploader.ImageOptions(uploadDir: siteConfig["galleryUploadDir"]! + "/\(user.id)/", nameSufix: "thumbnail", maxWidth: 150, maxHeight: 150, quality: 77, rotateByExif: true, crop: true)
                 ]
             case .post:
@@ -471,23 +472,23 @@ extension SiteController {
                 }
             }
 
-            let uploader = ImageUploader(imageVersions: imageVersions)
+            let uploader = ImageUploader(maxDimensions: 2048 * 2048, imageVersions: imageVersions)
 
             var results: Array<Dictionary<String, Any>> = []
             for file in files {
                 do {
-                    var contentType = file.contentType
-                    if contentType == "" {
-                        let ext = file.fileName.filePathExtension
-                        if ext == "jpg" || ext == "jpeg" {
-                            contentType = "image/jpeg"
-                        } else if ext == "png" {
+                    let newMainName = self.utilities.UUID()
+                    let images = try uploader.uploadByFile(path: file.path, localMainName: newMainName)
+                    for image in images {
+                        let contentType: String
+                        switch image.type {
+                        case .gif:
+                            contentType = "image/gif"
+                        case .jpg:
+                            contentType = "image/jpg"
+                        case .png:
                             contentType = "image/png"
                         }
-                    }
-                    let newMainName = self.utilities.UUID()
-                    let images = try uploader.uploadByFile(path: file.path, contentType: file.contentType, localMainName: newMainName)
-                    for image in images {
                         let fileId = try insertUploadedFile(fileName: file.fileName, localName: image.name, localDirectory: "", mimeType: contentType, size: UInt32(image.size), hash: image.hash, userId: user.id)
                         results.append([
                             "tracking": file.trackingId,
@@ -526,11 +527,11 @@ extension SiteController {
         }
     }
 
-    public func postAvatarUploadHandler(session: ForumSessionInfo, file: (path: String, fileName: String, contentType: String)) -> SiteResponse {
+    public func postAvatarUploadHandler(session: ForumSessionInfo, file: (path: String, fileName: String)) -> SiteResponse {
         let imageVersions = [
             ImageUploader.ImageOptions(uploadDir: siteConfig["avatarUploadDir"]!, nameSufix: "avatar", maxWidth: 120, maxHeight: 120, quality: 77, rotateByExif: true, crop: true),
         ]
-        let uploader = ImageUploader(imageVersions: imageVersions)
+        let uploader = ImageUploader(maxDimensions: 2048 * 2048, imageVersions: imageVersions)
 
         do {
             guard let user = try getCurrentUser(session: session) else {
@@ -541,17 +542,8 @@ extension SiteController {
                 return errorNotifyPage(session: session, message: "No permission")
             }
 
-            var contentType = file.contentType
-            if contentType == "" {
-                let ext = file.fileName.filePathExtension
-                if ext == "jpg" || ext == "jpeg" {
-                    contentType = "image/jpeg"
-                } else if ext == "png" {
-                    contentType = "image/png"
-                }
-            }
             let newMainName = String(user.id)
-            let _ = try uploader.uploadByFile(path: file.path, contentType: file.contentType, localMainName: newMainName)
+            let _ = try uploader.uploadByFile(path: file.path, localMainName: newMainName)
 
             return SiteResponse(status: .Redirect(location: "/user/\(user.id)"), session: session)
         } catch ImageUploader.ImageUploadError.IOError(let detail) {
