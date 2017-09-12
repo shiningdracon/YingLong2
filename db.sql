@@ -53,6 +53,7 @@ create table folders(
 	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
 	`name` varchar(50) NOT NULL,
 	`description` TEXT,
+	`user_id` int(10) unsigned,
 	PRIMARY KEY (`id`)
 ) ENGINE=InnoDB CHARACTER SET=utf8;
 
@@ -73,3 +74,10 @@ create table file_in_comic_page(
 	`page_id` int(10) unsigned NOT NULL,
 	KEY `map` (`file_id`,`page_id`) USING BTREE
 ) ENGINE=InnoDB CHARACTER SET=utf8;
+
+create table topic_in_folder(
+	`topic_id` int(10) unsigned NOT NULL,
+	`folder_id` int(10) unsigned NOT NULL,
+	KEY `map` (`topic_id`,`folder_id`) USING BTREE
+) ENGINE=InnoDB CHARACTER SET=utf8;
+

@@ -414,6 +414,20 @@ public struct YLDBdraconity {
     }
 }
 
+public struct YLDBfolders {
+    var id: UInt32
+    var name: String
+    var description: String
+    var userId: UInt32
+
+    init(_ args: [String: Any]) {
+        id = item(from: args["id"])
+        name = item(from: args["name"])
+        description = item(from: args["description"])
+        userId = item(from: args["user_id"])
+    }
+}
+
 extension DataManager {
 
     public func getConfig() -> [String: String] {
@@ -537,8 +551,12 @@ extension DataManager {
         return total
     }
 
-    public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) -> UInt32? {
-        return dbStorage.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: postTime)
+    public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) throws -> UInt32 {
+        guard let insertId = dbStorage.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: postTime) else {
+            throw DataError.dbError
+        }
+
+        return insertId
     }
 
     public func deletePost(id: UInt32) -> Bool {
@@ -549,8 +567,12 @@ extension DataManager {
         return dbStorage.updateTopic(id: id, lastPostId: lastPostId, lastPoster: lastPoster, lastPostTime: lastPostTime)
     }
 
-    public func insertTopic(forumId: UInt32, subject: String, user: YLDBusers, postTime: UInt32, type:Int32, sticky: Bool) -> UInt32? {
-        return dbStorage.insertTopic(forumId: forumId, subject: subject, user: user, postTime: postTime, type: type, sticky: sticky)
+    public func insertTopic(forumId: UInt32, subject: String, user: YLDBusers, postTime: UInt32, type:Int32, sticky: Bool) throws -> UInt32 {
+        guard let insertId = dbStorage.insertTopic(forumId: forumId, subject: subject, user: user, postTime: postTime, type: type, sticky: sticky) else {
+            throw DataError.dbError
+        }
+
+        return insertId
     }
 
     public func deleteTopic(id: UInt32) -> Bool {
@@ -571,6 +593,14 @@ extension DataManager {
 
     public func insertUpload(fileName: String, localName: String, localDirectory: String, mimeType: String, size: UInt32, hash: String, userId: UInt32, createTime: UInt32) throws -> UInt32 {
         guard let insertId = dbStorage.insertUpload(fileName: fileName, localName: localName, localDirectory: localDirectory, mimeType: mimeType, size: size, hash: hash, userId: userId, createTime: createTime) else {
+            throw DataError.dbError
+        }
+
+        return insertId
+    }
+
+    public func insertFolder(name: String, description: String, ownerId: UInt32) throws -> UInt32 {
+        guard let insertId = dbStorage.insertFolder(name: name, description: description, ownerId: ownerId) else {
             throw DataError.dbError
         }
 

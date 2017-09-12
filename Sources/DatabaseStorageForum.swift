@@ -412,7 +412,7 @@ extension DatabaseStorage {
     }
 
     public func insertUpload(fileName: String, localName: String, localDirectory: String, mimeType: String, size: UInt32, hash: String, userId: UInt32, createTime: UInt32) -> UInt32? {
-        guard let insertId = db.insert(statement: "insert into \(prefix)uploaded_files (created, file_name, local_name, local_dir, size, hash, mime_type, user_id) values(?,?,?,?,?,?,?,?)",
+        guard let insertId = db.insert(statement: "INSERT INTO \(prefix)uploaded_files (created, file_name, local_name, local_dir, size, hash, mime_type, user_id) VALUES(?,?,?,?,?,?,?,?)",
             params: [
                 .uint(UInt(createTime)),
                 .string(fileName),
@@ -431,5 +431,33 @@ extension DatabaseStorage {
         }
 
         return UInt32(insertId);
+    }
+
+    public func insertFolder(name: String, description: String, ownerId: UInt32) -> UInt32? {
+        guard let insertId = db.insert(statement: "INSERT INTO \(prefix)folders (name, description, user_id) VALUES(?,?,?)", params: [.string(name), .string(description), .uint(UInt(ownerId))]) else {
+            return nil
+        }
+
+        defer {
+            db.clear()
+        }
+
+        return UInt32(insertId);
+    }
+
+    public func getFolder(id: UInt32) -> [String: Any]? {
+        guard let results = db.select(statement: "SELECT * FROM \(prefix)folders WHERE id=?", params: [.uint(UInt(id))]) else {
+            return nil
+        }
+
+        defer {
+            db.clear()
+        }
+
+        if results.count > 0 {
+            return results[0]
+        }
+
+        return [:]
     }
 }

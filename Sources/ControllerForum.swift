@@ -352,13 +352,11 @@ extension SiteController {
                         _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
 
                         let now = UInt32(self.utilities.getNow())
-                        if let insertTopicId = dataManager.insertTopic(forumId: forumId, subject: subject, user: user, postTime: now, type: 0, sticky: false) {
-                            if let _ = dataManager.insertPost(topicId: insertTopicId, message: message, user: user, remoteAddress: session.remoteAddress, postTime: now) {
-                                if dataManager.updateTopic(id: insertTopicId, lastPostId: insertTopicId, lastPoster: user, lastPostTime: UInt32(now)) {
-                                    success = true
-                                    return SiteResponse(status: .Redirect(location: "/topic/\(insertTopicId)"), session: session)
-                                }
-                            }
+                        let insertTopicId = try dataManager.insertTopic(forumId: forumId, subject: subject, user: user, postTime: now, type: 0, sticky: false)
+                        let _ = try dataManager.insertPost(topicId: insertTopicId, message: message, user: user, remoteAddress: session.remoteAddress, postTime: now)
+                        if dataManager.updateTopic(id: insertTopicId, lastPostId: insertTopicId, lastPoster: user, lastPostTime: UInt32(now)) {
+                            success = true
+                            return SiteResponse(status: .Redirect(location: "/topic/\(insertTopicId)"), session: session)
                         }
                     } else {
                         return errorNotifyPage(session: session, message: "No permission")
@@ -400,11 +398,10 @@ extension SiteController {
 
                                 let now = UInt32(self.utilities.getNow())
                                 let remoteAddress = session.remoteAddress
-                                if let insertPostId = dataManager.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: now) {
-                                    if dataManager.updateTopic(id: topicId, lastPostId: insertPostId, lastPoster: user, lastPostTime: UInt32(now)) {
-                                        success = true
-                                        return SiteResponse(status: .Redirect(location: "/post/\(insertPostId)"), session: session)
-                                    }
+                                let insertPostId = try dataManager.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: now)
+                                if dataManager.updateTopic(id: topicId, lastPostId: insertPostId, lastPoster: user, lastPostTime: UInt32(now)) {
+                                    success = true
+                                    return SiteResponse(status: .Redirect(location: "/post/\(insertPostId)"), session: session)
                                 }
                             } else {
                                 return errorNotifyPage(session: session, message: "No permission")
@@ -489,7 +486,8 @@ extension SiteController {
                         case .png:
                             contentType = "image/png"
                         }
-                        let fileId = try insertUploadedFile(fileName: file.fileName, localName: image.name, localDirectory: "", mimeType: contentType, size: UInt32(image.size), hash: image.hash, userId: user.id)
+                        let localDirectory = URL(fileURLWithPath: image.path).deletingLastPathComponent().absoluteString
+                        let fileId = try insertUploadedFile(fileName: file.fileName, localName: image.name, localDirectory: localDirectory, mimeType: contentType, size: UInt32(image.size), hash: image.hash, userId: user.id)
                         results.append([
                             "tracking": file.trackingId,
                             "id": fileId,
