@@ -27,7 +27,7 @@ body {
 			{{#previous_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{#lang}}{{Previous page}}{{/lang}}</a></span>{{/previous_page_index}}
 			{{^previous_page_index}}<span>{{#lang}}{{Previous page}}{{/lang}}</span>{{/previous_page_index}}
 			{{#next_page_index}}<span><a href="/comic/{{comic_id}}/page/{{index}}">{{#lang}}{{Next page}}{{/lang}}</a></span>{{/next_page_index}}
-			{{^next_page_index}}<span><a href="/comic/{{comic_id}}/page/end">{{#lang}}{{Next page}}{{/lang}}</a></span>{{/next_page_index}}
+			{{^next_page_index}}<span><a href="/comic/{{comic_id}}/pageend">{{#lang}}{{Next page}}{{/lang}}</a></span>{{/next_page_index}}
 			<input id="comic_id" style="display: none" value="{{comic_id}}">
 			<select id="quick_jump">
 				{{#quick_jump}}

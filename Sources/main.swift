@@ -355,14 +355,19 @@ class SiteMain {
 extension SiteMain {
     func setupForumRoutes() {
         addRouteMustache(method: .get, uri: "/", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
-            return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: 1)
+            if let tab = UInt32.init(request.param(name: "tab") ?? "1") {
+                return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: 1)
+            }
+            return SiteResponse(status: .NotFound, session: session)
         })
 
         addRouteMustache(method: .get, uri: "/page/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            let tab = UInt32.init(request.param(name: "tab") ?? "1") ?? 1
-            let page = UInt32.init(request.urlVariables["page"] ?? "1") ?? 1
-            return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: page)
+            if let tab = UInt32.init(request.param(name: "tab") ?? "1") {
+                if let page = UInt32.init(request.urlVariables["page"] ?? "0"), page > 0 {
+                    return controller.mainPage(session: session as! ForumSessionInfo, tab: tab, page: page)
+                }
+            }
+            return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .get, uri: "/login", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             return controller.loginPage(session: session as! ForumSessionInfo)
@@ -382,17 +387,17 @@ extension SiteMain {
             return controller.logoutHandler(session: session as! ForumSessionInfo, csrf: csrf)
         })
         addRouteMustache(method: .get, uri: "/forum/{id}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let paramID = request.urlVariables["id"] {
-                if let id = UInt32(paramID) {
-                    return controller.forumPage(session: session as! ForumSessionInfo, id: id, page: 1)
-                }
+            if let paramId = UInt32(request.urlVariables["id"] ?? "0"), paramId > 0 {
+                return controller.forumPage(session: session as! ForumSessionInfo, id: paramId, page: 1)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/forum/{id}/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/forum/{id}/page/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let paramId = UInt32(request.urlVariables["id"] ?? "0"), paramId > 0 {
-                let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
-                return controller.forumPage(session: session as! ForumSessionInfo, id: paramId, page: page)
+                if let page = UInt32(request.urlVariables["page"] ?? "0"), page > 0 {
+                    return controller.forumPage(session: session as! ForumSessionInfo, id: paramId, page: page)
+                }
+
             }
             return SiteResponse(status: .NotFound, session: session)
         })
@@ -402,17 +407,30 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/topic/{id}/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/forum/{id}/post", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            //TODO
+            return SiteResponse(status: .NotFound, session: session)
+        })
+        addRouteMustache(method: .post, uri: "/forum/{id}/post", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            //TODO
+            return SiteResponse(status: .NotFound, session: session)
+        })
+        addRouteMustache(method: .get, uri: "/topic/{id}/page/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let paramId = UInt32(request.urlVariables["id"] ?? "0"), paramId > 0 {
-                let page = UInt32(request.urlVariables["page"] ?? "1") ?? 1
-                return controller.topicPage(session: session as! ForumSessionInfo, id: paramId, page: page)
+                if let page = UInt32(request.urlVariables["page"] ?? "0"), page > 0 {
+                    return controller.topicPage(session: session as! ForumSessionInfo, id: paramId, page: page)
+                }
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/post/{pid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let postId = UInt32(request.urlVariables["pid"] ?? "0"), postId > 0 {
+        addRouteMustache(method: .get, uri: "/post/{id}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let postId = UInt32(request.urlVariables["id"] ?? "0"), postId > 0 {
                 return controller.topicPage(session: session as! ForumSessionInfo, postId: postId)
             }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+        addRouteMustache(method: .get, uri: "/topic/{id}/postreply", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            //TODO
             return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .post, uri: "/topic/{id}/postreply", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
@@ -454,7 +472,7 @@ extension SiteMain {
                                 files.append((path: upload.tmpFileName, fileName: upload.fileName, trackingId: upload.fieldName))
                             }
                         }
-                        return controller.postFileHandler(session: session as! ForumSessionInfo, module: module, files: files)
+                        return controller.postFileHandler(session: session as! ForumSessionInfo, module: module, id: id, files: files)
                     }
                     return controller.errorNotifyPage(session: session, message: "No file uploaded")
                 }
@@ -471,17 +489,19 @@ extension SiteMain {
     }
 
     func setupComicRoutes() {
-        addRouteMustache(method: .get, uri: "/comic/{cid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/comic/{id}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
-            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+            if let cid = UInt32(request.urlVariables["id"] ?? "0"), cid > 0 {
                 return controller.viewComic(session: session, comicId: cid)
-            } else if request.urlVariables["cid"] == "add" {
-                return controller.addComic(session: session)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRouteMustache(method: .post, uri: "/comic/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/addcomic", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            return controller.addComic(session: session)
+        })
+
+        addRouteMustache(method: .post, uri: "/addcomic", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             let title = request.param(name: "title") ?? ""
             let author = request.param(name: "author") ?? ""
@@ -489,15 +509,15 @@ extension SiteMain {
             return controller.postAddComic(session: session, title: title, author: author, description: description)
         })
 
-        addRouteMustache(method: .get, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+        addRouteMustache(method: .get, uri: "/comic/{id}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let cid = UInt32(request.urlVariables["id"] ?? "0"), cid > 0 {
                 return controller.editComic(session: session, comicId: cid)
             }
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRouteMustache(method: .post, uri: "/comic/{cid}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+        addRouteMustache(method: .post, uri: "/comic/{id}/edit", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let cid = UInt32(request.urlVariables["id"] ?? "0"), cid > 0 {
                 let title = request.param(name: "title") ?? ""
                 let author = request.param(name: "author") ?? ""
                 let description = request.param(name: "description") ?? ""
@@ -520,7 +540,21 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
 
-        addRouteMustache(method: .post, uri: "/comic/{cid}/page/add", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/comic/{cid}/pageend", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+                return controller.viewLastPage(session: session, comicId: cid)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+
+        addRouteMustache(method: .get, uri: "/comic/{cid}/addpage", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+            if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
+                return controller.addPage(session: session, comicId: cid)
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        })
+
+        addRouteMustache(method: .post, uri: "/comic/{cid}/addpage", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
 
             if let cid = UInt32(request.urlVariables["cid"] ?? "0"), cid > 0 {
                 if let uploads = request.postFileUploads , uploads.count > 0 {

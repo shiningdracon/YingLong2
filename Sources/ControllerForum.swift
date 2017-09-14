@@ -427,7 +427,7 @@ extension SiteController {
         case chat
     }
 
-    public func postFileHandler(session: ForumSessionInfo, module: ForumUploadModule, files: Array<(path: String, fileName: String, trackingId: String)>) -> SiteResponse {
+    public func postFileHandler(session: ForumSessionInfo, module: ForumUploadModule, id: UInt32, files: Array<(path: String, fileName: String, trackingId: String)>) -> SiteResponse {
         do {
             guard let user = try getCurrentUser(session: session) else {
                 return errorNotifyPage(session: session, message: "No permission")
