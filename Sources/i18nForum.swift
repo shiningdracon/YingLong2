@@ -11,16 +11,6 @@ public class ForumI18n : SiteI18n {
 
     override var zh_cn: [String : Any] {
         return [
-            // Text orientation and encoding
-            "lang_direction"		:	"ltr",	// ltr (Left-To-Right) or rtl (Right-To-Left)
-            "lang_identifier"					:	"zh-CN",
-            "lang_encoding"			:	"UTF-8",
-            //"lang_multibyte"		:	true,
-
-            // Number formatting
-            "lang_decimal_point"				:	".",
-            "lang_thousands_sep"				:	",",
-
             // Notices
             "Bad request"			:	"错误。您使用的连接有误或已失效。",
             "No view"				:	"您没有权限浏览该版块。",
@@ -298,16 +288,6 @@ public class ForumI18n : SiteI18n {
 
     override var zh_tw: [String : Any] {
         return [
-            // Text orientation and encoding
-            "lang_direction"		:	"ltr",	// ltr (Left-To-Right) or rtl (Right-To-Left)
-            "lang_identifier"					:	"zh-CN",
-            "lang_encoding"			:	"UTF-8",
-            //"lang_multibyte"		:	true,
-
-            // Number formatting
-            "lang_decimal_point"				:	".",
-            "lang_thousands_sep"				:	",",
-
             // Notices
             "Bad request"			:	"错误。您使用的连接有误或已失效。",
             "No view"				:	"您没有权限浏览该版块。",

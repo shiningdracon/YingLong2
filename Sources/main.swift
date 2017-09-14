@@ -408,11 +408,21 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .get, uri: "/forum/{id}/post", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            //TODO
+            if let forumId = UInt32(request.urlVariables["id"] ?? "0"), forumId > 0 {
+                return controller.postTopicPage(session: session as! ForumSessionInfo, forumId: forumId)
+            }
             return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .post, uri: "/forum/{id}/post", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            //TODO
+            if let forumId = UInt32(request.urlVariables["id"] ?? "0"), forumId > 0 {
+                if let subject = request.param(name: "req_subject") {
+                    if let message = request.param(name: "req_message") {
+                        if let CSRFToken = request.param(name: "csrf_token") {
+                            return controller.postTopicHandler(session: session as! ForumSessionInfo, subject: subject, message: message, forumId: forumId, CSRFToken: CSRFToken)
+                        }
+                    }
+                }
+            }
             return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .get, uri: "/topic/{id}/page/{page}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in

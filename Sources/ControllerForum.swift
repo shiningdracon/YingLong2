@@ -330,7 +330,7 @@ extension SiteController {
         }
     }
 
-    public func postTopicHandler(session: ForumSessionInfo, subject: String, message: String, forumId: UInt32, attachedFile: String? = nil) -> SiteResponse {
+    public func postTopicHandler(session: ForumSessionInfo, subject: String, message: String, forumId: UInt32, attachedFile: String? = nil, CSRFToken: String) -> SiteResponse {
 
         var success = false
         dataManager.transactionStart()
@@ -344,6 +344,10 @@ extension SiteController {
         }
 
         do {
+            if try checkCSRF(session: session, token: CSRFToken) == false {
+                return SiteResponse(status: .Error(message: "CSRF check failed"), session: session)
+            }
+
             if let user = try getCurrentUser(session: session) {
                 if let group = dataManager.getGroup(id: user.group_id) {
                     let permission = dataManager.getPermission(forumId: forumId, groupId: user.group_id)
@@ -368,6 +372,8 @@ extension SiteController {
             return SiteResponse(status: .Error(message: detail), session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
@@ -727,6 +733,34 @@ extension SiteController {
                             return SiteResponse(status: .OK(view: "viewforum.mustache", data: data), session: session)
                         }
                     }
+                }
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        } catch is DataError {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+        }
+    }
+
+    public func postTopicPage(session: ForumSessionInfo, forumId: UInt32) -> SiteResponse {
+        do {
+            if let user = try getCurrentUser(session: session) {
+                var data = commonData(locale: session.locale)
+                data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Post new topic")
+
+                if user.isGuest() == false {
+                    data["user"] = [
+                        "username": user.username,
+                        "userID": user.id,
+                        "csrf_token": try CSRFToken(session: session)
+                    ]
+                    data["forum_id"] = forumId
+                    return SiteResponse(status: .OK(view: "post_topic.mustache", data: data), session: nil)
+                } else {
+                    return SiteResponse(status: .Redirect(location: "/login"), session: nil)
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
