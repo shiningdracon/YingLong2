@@ -309,6 +309,19 @@ extension DatabaseStorage {
         return nil
     }
 
+    public func updatePost(id: UInt32, message: String) -> Bool {
+        let ret = db.update(statement: "UPDATE \(prefix)posts SET message=? WHERE id=?", params: [
+            .string(message),
+            .uint(UInt(id))
+            ])
+
+        defer {
+            db.clear()
+        }
+
+        return ret
+    }
+
     public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) -> UInt32? {
         guard let insertId = db.insert(statement: "INSERT INTO \(prefix)posts (poster, poster_id, poster_ip, message, hide_smilies, posted, topic_id) VALUES(?,?,?,?,?,?,?)",
             params: [
@@ -342,11 +355,30 @@ extension DatabaseStorage {
         return ret
     }
 
-    public func updateTopic(id: UInt32, lastPostId: UInt32, lastPoster: YLDBusers, lastPostTime: UInt32) -> Bool {
+    public func updateTopicAfterNewPost(id: UInt32, lastPostId: UInt32, lastPosterName: String, lastPostTime: UInt32) -> Bool {
         let ret = db.update(statement: "UPDATE \(prefix)topics SET num_replies=num_replies+1, last_post=?, last_post_id=?, last_poster=? WHERE id=?", params: [
             .uint(UInt(lastPostTime)),
             .uint(UInt(lastPostId)),
-            .string(lastPoster.username),
+            .string(lastPosterName),
+            .uint(UInt(id))
+            ])
+
+        defer {
+            db.clear()
+        }
+
+        return ret
+    }
+
+    public func updateTopic(id: UInt32, forumId: UInt32, subject: String, sticky: Bool) -> Bool {
+        var isSticky: Int = 0
+        if sticky {
+            isSticky = 1
+        }
+        let ret = db.update(statement: "UPDATE \(prefix)topics SET subject=?, sticky=?, forum_id=? WHERE id=?", params: [
+            .string(subject),
+            .int(isSticky),
+            .uint(UInt(forumId)),
             .uint(UInt(id))
             ])
 

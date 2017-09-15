@@ -356,11 +356,61 @@ extension SiteController {
                         _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
 
                         let now = UInt32(self.utilities.getNow())
-                        let insertTopicId = try dataManager.insertTopic(forumId: forumId, subject: subject, user: user, postTime: now, type: 0, sticky: false)
-                        let _ = try dataManager.insertPost(topicId: insertTopicId, message: message, user: user, remoteAddress: session.remoteAddress, postTime: now)
-                        if dataManager.updateTopic(id: insertTopicId, lastPostId: insertTopicId, lastPoster: user, lastPostTime: UInt32(now)) {
+                        let topicId = try dataManager.insertTopic(forumId: forumId, subject: subject, user: user, postTime: now, type: 0, sticky: false)
+                        let postId = try dataManager.insertPost(topicId: topicId, message: message, user: user, remoteAddress: session.remoteAddress, postTime: now)
+                        if dataManager.updateTopicAfterNewPost(id: topicId, lastPostId: postId, lastPoster: user, lastPostTime: now) {
                             success = true
-                            return SiteResponse(status: .Redirect(location: "/topic/\(insertTopicId)"), session: session)
+                            return SiteResponse(status: .Redirect(location: "/topic/\(topicId)"), session: session)
+                        }
+                    } else {
+                        return errorNotifyPage(session: session, message: "No permission")
+                    }
+                }
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        } catch WebFrameworkError.BBCodeError(let detail) {
+            return SiteResponse(status: .Error(message: detail), session: session)
+        } catch is DataError {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+        }
+    }
+
+    public func editTopicHandler(session: ForumSessionInfo, topicId: UInt32, subject: String, message: String, forumId: UInt32, CSRFToken: String) -> SiteResponse {
+
+        var success = false
+        dataManager.transactionStart()
+
+        defer {
+            if success {
+                dataManager.transactionCommit()
+            } else {
+                dataManager.transactionRollback()
+            }
+        }
+
+        do {
+            if try checkCSRF(session: session, token: CSRFToken) == false {
+                return SiteResponse(status: .Error(message: "CSRF check failed"), session: session)
+            }
+
+            if let user = try getCurrentUser(session: session) {
+                if let group = dataManager.getGroup(id: user.group_id) {
+                    if group.g_edit_posts {
+                         _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+
+                        if let topic = try dataManager.getTopic(id: topicId) {
+                            if dataManager.updateTopic(id: topicId, forumId: forumId, subject: subject, sticky: false) {
+                                if dataManager.updatePost(id: topic.first_post_id, message: message) {
+                                    success = true
+                                    return SiteResponse(status: .Redirect(location: "/topic/\(topicId)"), session: session)
+                                }
+                            }
+                        } else {
+                            return SiteResponse(status: .NotFound, session: session)
                         }
                     } else {
                         return errorNotifyPage(session: session, message: "No permission")
@@ -405,7 +455,7 @@ extension SiteController {
                                 let now = UInt32(self.utilities.getNow())
                                 let remoteAddress = session.remoteAddress
                                 let insertPostId = try dataManager.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: now)
-                                if dataManager.updateTopic(id: topicId, lastPostId: insertPostId, lastPoster: user, lastPostTime: UInt32(now)) {
+                                if dataManager.updateTopicAfterNewPost(id: topicId, lastPostId: insertPostId, lastPoster: user, lastPostTime: UInt32(now)) {
                                     success = true
                                     return SiteResponse(status: .Redirect(location: "/post/\(insertPostId)"), session: session)
                                 }
@@ -413,6 +463,43 @@ extension SiteController {
                                 return errorNotifyPage(session: session, message: "No permission")
                             }
                         }
+                    }
+                }
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        } catch WebFrameworkError.BBCodeError(let detail) {
+            return SiteResponse(status: .Error(message: detail), session: session)
+        } catch is DataError {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+        }
+    }
+
+    public func editReplyHandler(session: ForumSessionInfo, postId: UInt32, message: String) -> SiteResponse {
+        var success = false
+        dataManager.transactionStart()
+
+        defer {
+            if success {
+                dataManager.transactionCommit()
+            } else {
+                dataManager.transactionRollback()
+            }
+        }
+
+        do {
+            if let user = try getCurrentUser(session: session) {
+                if let group = dataManager.getGroup(id: user.group_id) {
+                    if group.g_edit_posts {
+                        _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+
+                        if dataManager.updatePost(id: postId, message: message) {
+                            success = true
+                            return SiteResponse(status: .Redirect(location: "/post/\(postId)"), session: session)
+                        }
+                    } else {
+                        return errorNotifyPage(session: session, message: "No permission")
                     }
                 }
             }
@@ -758,6 +845,7 @@ extension SiteController {
                         "csrf_token": try CSRFToken(session: session)
                     ]
                     data["forum_id"] = forumId
+                    let topicId = try dataManager.insertTopic(forumId: 0, subject: "", user: user, postTime: UInt32(utilities.getNow()), type: 0, sticky: false)
                     return SiteResponse(status: .OK(view: "post_topic.mustache", data: data), session: nil)
                 } else {
                     return SiteResponse(status: .Redirect(location: "/login"), session: nil)

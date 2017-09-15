@@ -551,6 +551,10 @@ extension DataManager {
         return total
     }
 
+    public func updatePost(id: UInt32, message: String) -> Bool {
+        return dbStorage.updatePost(id: id, message: message)
+    }
+
     public func insertPost(topicId: UInt32, message: String, user: YLDBusers, remoteAddress: String, postTime: UInt32) throws -> UInt32 {
         guard let insertId = dbStorage.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: postTime) else {
             throw DataError.dbError
@@ -563,8 +567,12 @@ extension DataManager {
         return dbStorage.deletePost(id: id)
     }
 
-    public func updateTopic(id: UInt32, lastPostId: UInt32, lastPoster: YLDBusers, lastPostTime: UInt32) -> Bool {
-        return dbStorage.updateTopic(id: id, lastPostId: lastPostId, lastPoster: lastPoster, lastPostTime: lastPostTime)
+    public func updateTopicAfterNewPost(id: UInt32, lastPostId: UInt32, lastPoster: YLDBusers, lastPostTime: UInt32) -> Bool {
+        return dbStorage.updateTopicAfterNewPost(id: id, lastPostId: lastPostId, lastPosterName: lastPoster.username, lastPostTime: lastPostTime)
+    }
+
+    public func updateTopic(id: UInt32, forumId: UInt32, subject: String, sticky: Bool) -> Bool {
+        return dbStorage.updateTopic(id: id, forumId: forumId, subject: subject, sticky: sticky)
     }
 
     public func insertTopic(forumId: UInt32, subject: String, user: YLDBusers, postTime: UInt32, type:Int32, sticky: Bool) throws -> UInt32 {
