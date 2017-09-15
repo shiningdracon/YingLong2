@@ -443,25 +443,23 @@ extension SiteController {
         }
 
         do {
-            if topicId > 0 {
-                if let user = try getCurrentUser(session: session) {
-                    if let group = dataManager.getGroup(id: user.group_id) {
-                        if let topic = try dataManager.getTopic(id: topicId) {
-                            let permission = dataManager.getPermission(forumId: topic.forum_id, groupId: user.group_id)
-                            if canPostReply(topic: topic, group: group, permission: permission) {
+            if let user = try getCurrentUser(session: session) {
+                if let group = dataManager.getGroup(id: user.group_id) {
+                    if let topic = try dataManager.getTopic(id: topicId) {
+                        let permission = dataManager.getPermission(forumId: topic.forum_id, groupId: user.group_id)
+                        if canPostReply(topic: topic, group: group, permission: permission) {
 
-                                _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+                            _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
 
-                                let now = UInt32(self.utilities.getNow())
-                                let remoteAddress = session.remoteAddress
-                                let insertPostId = try dataManager.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: now)
-                                if dataManager.updateTopicAfterNewPost(id: topicId, lastPostId: insertPostId, lastPoster: user, lastPostTime: UInt32(now)) {
-                                    success = true
-                                    return SiteResponse(status: .Redirect(location: "/post/\(insertPostId)"), session: session)
-                                }
-                            } else {
-                                return errorNotifyPage(session: session, message: "No permission")
+                            let now = UInt32(self.utilities.getNow())
+                            let remoteAddress = session.remoteAddress
+                            let insertPostId = try dataManager.insertPost(topicId: topicId, message: message, user: user, remoteAddress: remoteAddress, postTime: now)
+                            if dataManager.updateTopicAfterNewPost(id: topicId, lastPostId: insertPostId, lastPoster: user, lastPostTime: UInt32(now)) {
+                                success = true
+                                return SiteResponse(status: .Redirect(location: "/post/\(insertPostId)"), session: session)
                             }
+                        } else {
+                            return errorNotifyPage(session: session, message: "No permission")
                         }
                     }
                 }
@@ -768,7 +766,7 @@ extension SiteController {
                         //TODO: which one is better? server side or client side?
                         // server side can save time. client side can change url and is one url one resouse
                         //return topicPage(session: session, id: post.topic_id, page: page)
-                        return SiteResponse(status: .Redirect(location: "/topic/\(post.topic_id)/\(page)#p\(postId)"), session: session)
+                        return SiteResponse(status: .Redirect(location: "/topic/\(post.topic_id)/page/\(page)#p\(postId)"), session: session)
                     }
                 }
             }
@@ -835,20 +833,67 @@ extension SiteController {
     public func postTopicPage(session: ForumSessionInfo, forumId: UInt32) -> SiteResponse {
         do {
             if let user = try getCurrentUser(session: session) {
-                var data = commonData(locale: session.locale)
-                data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Post new topic")
+                if let group = dataManager.getGroup(id: user.group_id) {
+                    let permission = dataManager.getPermission(forumId: forumId, groupId: user.group_id)
+                    if canPostTopic(group: group, permission: permission) {
+                        var data = commonData(locale: session.locale)
+                        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Post new topic")
 
-                if user.isGuest() == false {
-                    data["user"] = [
-                        "username": user.username,
-                        "userID": user.id,
-                        "csrf_token": try CSRFToken(session: session)
-                    ]
-                    data["forum_id"] = forumId
-                    let topicId = try dataManager.insertTopic(forumId: 0, subject: "", user: user, postTime: UInt32(utilities.getNow()), type: 0, sticky: false)
-                    return SiteResponse(status: .OK(view: "post_topic.mustache", data: data), session: nil)
-                } else {
-                    return SiteResponse(status: .Redirect(location: "/login"), session: nil)
+                        if user.isGuest() == false {
+                            data["user"] = [
+                                "username": user.username,
+                                "userID": user.id,
+                                "csrf_token": try CSRFToken(session: session)
+                            ]
+                            data["forum_id"] = forumId
+                            //let topicId = try dataManager.insertTopic(forumId: 0, subject: "", user: user, postTime: UInt32(utilities.getNow()), type: 0, sticky: false)
+                            return SiteResponse(status: .OK(view: "post_topic.mustache", data: data), session: nil)
+                        } else {
+                            return SiteResponse(status: .Redirect(location: "/login"), session: nil)
+                        }
+                    } else {
+                        return errorNotifyPage(session: session, message: "No permission")
+                    }
+                }
+            }
+            return SiteResponse(status: .NotFound, session: session)
+        } catch is DataError {
+            return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
+        } catch {
+            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+        }
+    }
+
+    public func postReplyPage(session: ForumSessionInfo, topicId: UInt32) -> SiteResponse {
+        do {
+            if let user = try getCurrentUser(session: session) {
+                if let group = dataManager.getGroup(id: user.group_id) {
+                    if let topic = try dataManager.getTopic(id: topicId) {
+                        let permission = dataManager.getPermission(forumId: topic.forum_id, groupId: user.group_id)
+                        if canPostReply(topic: topic, group: group, permission: permission) {
+                            var data = commonData(locale: session.locale)
+                            data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Post new reply")
+
+                            if user.isGuest() == false {
+                                data["user"] = [
+                                    "username": user.username,
+                                    "userID": user.id,
+                                    "csrf_token": try CSRFToken(session: session)
+                                ]
+                                data["topic_id"] = topicId
+                                let remoteAddress = session.remoteAddress
+                                //let postId = try dataManager.insertPost(topicId: topicId, message: "", user: user, remoteAddress: remoteAddress, postTime: 0)
+
+                                return SiteResponse(status: .OK(view: "post_reply.mustache", data: data), session: nil)
+                            } else {
+                                return SiteResponse(status: .Redirect(location: "/login"), session: nil)
+                            }
+                        } else {
+                            return errorNotifyPage(session: session, message: "No permission")
+                        }
+                    }
                 }
             }
             return SiteResponse(status: .NotFound, session: session)
