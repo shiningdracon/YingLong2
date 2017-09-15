@@ -429,7 +429,7 @@ extension SiteController {
         }
     }
 
-    public func postReplyHandler(session: ForumSessionInfo, topicId: UInt32, message: String) -> SiteResponse {
+    public func postReplyHandler(session: ForumSessionInfo, topicId: UInt32, message: String, CSRFToken: String) -> SiteResponse {
 
         var success = false
         dataManager.transactionStart()
@@ -443,6 +443,10 @@ extension SiteController {
         }
 
         do {
+            if try checkCSRF(session: session, token: CSRFToken) == false {
+                return SiteResponse(status: .Error(message: "CSRF check failed"), session: session)
+            }
+
             if let user = try getCurrentUser(session: session) {
                 if let group = dataManager.getGroup(id: user.group_id) {
                     if let topic = try dataManager.getTopic(id: topicId) {
@@ -469,12 +473,14 @@ extension SiteController {
             return SiteResponse(status: .Error(message: detail), session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
     }
 
-    public func editReplyHandler(session: ForumSessionInfo, postId: UInt32, message: String) -> SiteResponse {
+    public func editReplyHandler(session: ForumSessionInfo, postId: UInt32, message: String, CSRFToken: String) -> SiteResponse {
         var success = false
         dataManager.transactionStart()
 
@@ -487,6 +493,10 @@ extension SiteController {
         }
 
         do {
+            if try checkCSRF(session: session, token: CSRFToken) == false {
+                return SiteResponse(status: .Error(message: "CSRF check failed"), session: session)
+            }
+
             if let user = try getCurrentUser(session: session) {
                 if let group = dataManager.getGroup(id: user.group_id) {
                     if group.g_edit_posts {
@@ -506,6 +516,8 @@ extension SiteController {
             return SiteResponse(status: .Error(message: detail), session: session)
         } catch is DataError {
             return SiteResponse(status: .Error(message: "DB failed"), session: session)
+        } catch ForumError.GenerateCSRFError {
+            return SiteResponse(status: .Error(message: "Generate CSRF token failed"), session: session)
         } catch {
             return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }

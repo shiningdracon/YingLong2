@@ -440,13 +440,17 @@ extension SiteMain {
             return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .get, uri: "/topic/{id}/postreply", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            //TODO
+            if let topicId = UInt32(request.urlVariables["id"] ?? "0"), topicId > 0 {
+                return controller.postReplyPage(session: session as! ForumSessionInfo, topicId: topicId)
+            }
             return SiteResponse(status: .NotFound, session: session)
         })
         addRouteMustache(method: .post, uri: "/topic/{id}/postreply", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let topicId = UInt32(request.urlVariables["id"] ?? "0"), topicId > 0 {
                 if let message = request.param(name: "req_message") {
-                    return controller.postReplyHandler(session: session as! ForumSessionInfo, topicId: topicId, message: message)
+                    if let CSRFToken = request.param(name: "csrf_token") {
+                        return controller.postReplyHandler(session: session as! ForumSessionInfo, topicId: topicId, message: message, CSRFToken: CSRFToken)
+                    }
                 }
             }
             return SiteResponse(status: .NotFound, session: session)

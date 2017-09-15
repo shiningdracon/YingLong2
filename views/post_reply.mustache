@@ -3,10 +3,9 @@
 	{{#user}}
 	<div class="boxeditor">
 		<span>{{#lang}}{{Quick post}}{{/lang}}</span>
-		<form id="post" method="post" action="/forum/{{forum_id}}/post" onsubmit="">
+		<form id="post" method="post" action="/topic/{{topic_id}}/postreply" onsubmit="">
 			<input type="hidden" name="form_sent" value="1" />
 			<input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-			<input type="text" name="req_subject" placeholder="Subject" />
 			<textarea name="req_message" id="req_message" rows="20" cols="95" tabindex="2"></textarea>
 			<p class="buttons"><input type="submit" name="submit" value="{{#lang}}{{Submit}}{{/lang}}" tabindex="3" accesskey="s" /> <input type="submit" name="preview" value="{{#lang}}{{Preview}}{{/lang}}" tabindex="4" accesskey="p" /></p>
 		</form>
