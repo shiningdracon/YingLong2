@@ -233,8 +233,8 @@ class SiteMain {
         let forumdb = DatabaseStorage(database: mysql, prefix: databaseConfig.tablePrefix)
         do {
             try self.memoryStorage.initMemoryStorageForum(forumdb)
-        } catch MemoryStorageError.initFailed {
-            fatalError("MemoryStorage init failed")
+        } catch MemoryStorageError.initFailed(let message) {
+            fatalError("MemoryStorage init failed: \(message)")
         } catch {
             fatalError("Unknow error")
         }

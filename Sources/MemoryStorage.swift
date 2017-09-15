@@ -1,7 +1,7 @@
 import Foundation
 
 public enum MemoryStorageError: Error {
-    case initFailed
+    case initFailed(String)
 }
 
 public class MemoryStorage {
