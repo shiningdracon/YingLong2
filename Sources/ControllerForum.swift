@@ -353,7 +353,7 @@ extension SiteController {
                     let permission = dataManager.getPermission(forumId: forumId, groupId: user.group_id)
                     if canPostTopic(group: group, permission: permission) {
 
-                        _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+                        try self.utilities.BBCodeValidate(bbcode: message, local: session.locale)
 
                         let now = UInt32(self.utilities.getNow())
                         let topicId = try dataManager.insertTopic(forumId: forumId, subject: subject, user: user, postTime: now, type: 0, sticky: false)
@@ -400,7 +400,7 @@ extension SiteController {
             if let user = try getCurrentUser(session: session) {
                 if let group = dataManager.getGroup(id: user.group_id) {
                     if group.g_edit_posts {
-                         _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+                        try self.utilities.BBCodeValidate(bbcode: message, local: session.locale)
 
                         if let topic = try dataManager.getTopic(id: topicId) {
                             if dataManager.updateTopic(id: topicId, forumId: forumId, subject: subject, sticky: false) {
@@ -453,7 +453,7 @@ extension SiteController {
                         let permission = dataManager.getPermission(forumId: topic.forum_id, groupId: user.group_id)
                         if canPostReply(topic: topic, group: group, permission: permission) {
 
-                            _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+                            try self.utilities.BBCodeValidate(bbcode: message, local: session.locale)
 
                             let now = UInt32(self.utilities.getNow())
                             let remoteAddress = session.remoteAddress
@@ -500,7 +500,7 @@ extension SiteController {
             if let user = try getCurrentUser(session: session) {
                 if let group = dataManager.getGroup(id: user.group_id) {
                     if group.g_edit_posts {
-                        _ = try self.utilities.BBCode2HTML(bbcode: message, local: session.locale, configuration: nil)
+                        try self.utilities.BBCodeValidate(bbcode: message, local: session.locale)
 
                         if dataManager.updatePost(id: postId, message: message) {
                             success = true

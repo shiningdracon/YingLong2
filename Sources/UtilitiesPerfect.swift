@@ -59,6 +59,28 @@ class UtilitiesPerfect: UtilitiesProtocol {
         }
     }
 
+    func BBCodeValidate(bbcode: String, local: i18nLocale) throws {
+        do {
+            try self.bbcode.validate(bbcode: bbcode)
+        } catch let error as BBCodeError {
+            let i18nData = BBCodeI18n.instance.getI18n(local)
+            switch error {
+            case .internalError(let detail):
+                throw WebFrameworkError.BBCodeError(detail)
+            case .unclosedTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unclosed tag"] as! String + ": " + detail)
+            case .unfinishedAttr(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unfinished attr"] as! String + ": " + detail)
+            case .unfinishedClosingTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unfinished closing tag"] as! String + ": " + detail)
+            case .unfinishedOpeningTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unfinished opening tag"] as! String + ": " + detail)
+            case .unpairedTag(let detail):
+                throw WebFrameworkError.BBCodeError(i18nData["Unparied tag"] as! String + ": " + detail)
+            }
+        }
+    }
+
     func getNow() -> Double {
         return PerfectLib.getNow() / 1000
     }

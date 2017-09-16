@@ -4,6 +4,7 @@ protocol UtilitiesProtocol {
     func ChineseConvertS2T(_ s: String) -> String
     func ChineseConvertT2S(_ t: String) -> String
     func BBCode2HTML(bbcode: String, local: i18nLocale, configuration: [String: Any]?) throws -> String
+    func BBCodeValidate(bbcode: String, local: i18nLocale) throws
     func getNow() -> Double
     func md5(string: String) -> String?
     func sha1(string: String) -> String?
