@@ -463,7 +463,7 @@ extension SiteMain {
             }
             return SiteResponse(status: .NotFound, session: session)
         })
-        addRouteMustache(method: .get, uri: "/draconity/{uid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
+        addRouteMustache(method: .get, uri: "/user/{uid}", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             if let userId = UInt32(request.urlVariables["uid"] ?? "0"), userId > 0 {
                 return controller.draconityPage(session: session as! ForumSessionInfo, userId: userId)
             }
