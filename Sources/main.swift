@@ -37,6 +37,7 @@ class SiteMain {
         var cookiePath: String
         var cookieSecure: Bool
         var cookieSeed: String
+        var baseUrl: String
     }
 
     typealias PageHandler = (SiteController, SessionInfo, HTTPRequest, HTTPResponse) -> SiteResponse
@@ -87,7 +88,7 @@ class SiteMain {
 
             let locale: i18nLocale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
 
-            let session: ForumSessionInfo = ForumSessionInfo(remoteAddress: request.remoteAddress.host, locale: locale, userID: 0, passwordHash: "", expirationTime: 0, sessionHash: "")
+            let session: ForumSessionInfo = ForumSessionInfo(remoteAddress: request.remoteAddress.host, locale: locale, referer: request.header(.referer) ?? "", userID: 0, passwordHash: "", expirationTime: 0, sessionHash: "")
 
             let cookies = request.cookies
             for cookie in cookies {
@@ -118,6 +119,7 @@ class SiteMain {
             controller.siteConfig["privateMessageUploadDir"] = siteConfig.privateMessageUploadDir
             controller.siteConfig["chatUploadDir"] = siteConfig.chatUploadDir
             controller.siteConfig["avatarUploadDir"] = siteConfig.avatarUploadDir
+            controller.siteConfig["baseUrl"] = self.siteConfig.baseUrl
 
             let result = self.pageHandler(controller, session, request, response)
 
@@ -177,6 +179,7 @@ class SiteMain {
                 if let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
 
                     let databaseConfigJSON = json["databaseConfig"] as? [String: Any],
+
                     let host = databaseConfigJSON["host"] as? String,
                     let user = databaseConfigJSON["user"] as? String,
                     let password = databaseConfigJSON["password"] as? String,
@@ -184,6 +187,7 @@ class SiteMain {
                     let tablePrefix = databaseConfigJSON["tablePrefix"] as? String,
 
                     let serverConfigJSON = json["serverConfig"] as? [String: Any],
+
                     let address = serverConfigJSON["address"] as? String,
                     let portString = serverConfigJSON["port"] as? String,
                     let port = UInt16(portString),
@@ -193,6 +197,7 @@ class SiteMain {
                     let enableHTTP2 = Bool(enableHTTP2String),
 
                     let siteConfigJSON = json["siteConfig"] as? [String: Any],
+
                     let uploadSizeLimitString = siteConfigJSON["uploadSizeLimit"] as? String,
                     let uploadSizeLimit = Int(uploadSizeLimitString),
                     let galleryUploadDir = siteConfigJSON["galleryUploadDir"] as? String,
@@ -206,11 +211,13 @@ class SiteMain {
                     let cookiePath = siteConfigJSON["cookiePath"] as? String,
                     let cookieSecureString = siteConfigJSON["cookieSecure"] as? String,
                     let cookieSecure = Bool(cookieSecureString),
-                    let cookieSeed = siteConfigJSON["cookieSeed"] as? String
+                    let cookieSeed = siteConfigJSON["cookieSeed"] as? String,
+
+                    let baseUrl = siteConfigJSON["baseUrl"] as? String
                 {
                     self.databaseConfig = DatabaseConfig(host: host, user: user, password: password, dbname: dbname, tablePrefix: tablePrefix)
                     self.serverConfig = ServerConfig(address: address, port: port, sslCertificatePath: sslCertificatePath, sslKeyPath: sslKeyPath, enableHTTP2: enableHTTP2)
-                    self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit, galleryUploadDir: galleryUploadDir, postUploadDir: postUploadDir, privateMessageUploadDir: privateMessageUploadDir, chatUploadDir: chatUploadDir, avatarUploadDir: avatarUploadDir, cookieName: cookieName, cookieDomain: cookieDomain, cookiePath: cookiePath, cookieSecure: cookieSecure, cookieSeed: cookieSeed)
+                    self.siteConfig = SiteConfig(uploadSizeLimit: uploadSizeLimit, galleryUploadDir: galleryUploadDir, postUploadDir: postUploadDir, privateMessageUploadDir: privateMessageUploadDir, chatUploadDir: chatUploadDir, avatarUploadDir: avatarUploadDir, cookieName: cookieName, cookieDomain: cookieDomain, cookiePath: cookiePath, cookieSecure: cookieSecure, cookieSeed: cookieSeed, baseUrl: baseUrl)
                 } else {
                     fatalError("Load config failed")
                 }
@@ -250,7 +257,7 @@ class SiteMain {
         routes.add(method: method, uri: uri, handler: { (request: HTTPRequest, response: HTTPResponse) in
             let locale: i18nLocale = SiteMain.parseAcceptLanguage(request.header(.acceptLanguage) ?? "")
 
-            let session: ForumSessionInfo = ForumSessionInfo(remoteAddress: request.remoteAddress.host, locale: locale, userID: 0, passwordHash: "", expirationTime: 0, sessionHash: "")
+            let session: ForumSessionInfo = ForumSessionInfo(remoteAddress: request.remoteAddress.host, locale: locale, referer: request.header(.referer) ?? "", userID: 0, passwordHash: "", expirationTime: 0, sessionHash: "")
 
             let cookies = request.cookies
             for cookie in cookies {
@@ -281,6 +288,7 @@ class SiteMain {
             controller.siteConfig["privateMessageUploadDir"] = self.siteConfig.privateMessageUploadDir
             controller.siteConfig["chatUploadDir"] = self.siteConfig.chatUploadDir
             controller.siteConfig["avatarUploadDir"] = self.siteConfig.avatarUploadDir
+            controller.siteConfig["baseUrl"] = self.siteConfig.baseUrl
 
             let result = handler(controller, session, request, response)
 
@@ -379,8 +387,8 @@ extension SiteMain {
             let username = request.param(name: "req_username") ?? ""
             let password = request.param(name: "req_password") ?? ""
             let savepass: Bool = (request.param(name: "save_pass") == "1") ? true : false
-            let location = request.param(name: "redirect_url") ?? "/" //TODO: validate
-            return controller.loginHandler(session: session as! ForumSessionInfo, username: username, password: password, savepass: savepass, redirectURL: "/")
+            let location = request.param(name: "redirect_url") ?? "/"
+            return controller.loginHandler(session: session as! ForumSessionInfo, username: username, password: password, savepass: savepass, redirectURL: location)
         })
         addRouteMustache(method: .get, uri: "/logout", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             let csrf = request.param(name: "csrf_token") ?? ""

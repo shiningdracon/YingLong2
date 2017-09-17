@@ -21,10 +21,12 @@ public enum WebFrameworkError: Error {
 public class SessionInfo {
     var remoteAddress: String
     var locale: i18nLocale
+    var referer: String
 
-    init(remoteAddress: String, locale: i18nLocale) {
+    init(remoteAddress: String, locale: i18nLocale, referer: String) {
         self.remoteAddress = remoteAddress
         self.locale = locale
+        self.referer = referer
     }
 }
 
@@ -97,8 +99,15 @@ public final class SiteController {
     }
 
     public func validateRedirect(url: String) -> Bool {
-        // TODO
-        return true
+        if let components = URLComponents(string: url) {
+            if let host = components.host {
+                //TODO: for sites not installed on root path, need support sub path
+                if host == siteConfig["baseUrl"] {
+                    return true
+                }
+            }
+        }
+        return false
     }
 }
 

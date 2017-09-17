@@ -7,12 +7,12 @@ public class ForumSessionInfo: SessionInfo {
     var expirationTime: Double
     var sessionHash: String
 
-    init(remoteAddress: String, locale: i18nLocale, userID: UInt32, passwordHash: String, expirationTime: Double, sessionHash: String) {
+    init(remoteAddress: String, locale: i18nLocale, referer: String, userID: UInt32, passwordHash: String, expirationTime: Double, sessionHash: String) {
         self.userID = userID
         self.passwordHash = passwordHash
         self.expirationTime = expirationTime
         self.sessionHash = sessionHash
-        super.init(remoteAddress: remoteAddress, locale: locale)
+        super.init(remoteAddress: remoteAddress, locale: locale, referer: referer)
     }
 }
 
@@ -313,8 +313,12 @@ extension SiteController {
                     }
                     let sessionHash = self.utilities.forumHMAC(data: "\(user.id)|\(expire)", key: "\(cookieSeed)_cookie_hash")
                     if sessionPasswordHash != nil && sessionHash != nil {
-                        let forumSession = ForumSessionInfo(remoteAddress: session.remoteAddress, locale: session.locale, userID: user.id, passwordHash: sessionPasswordHash!, expirationTime: expire, sessionHash: sessionHash!)
-                        return SiteResponse(status: .Redirect(location: redirectURL), session: forumSession)
+                        let forumSession = ForumSessionInfo(remoteAddress: session.remoteAddress, locale: session.locale, referer: "", userID: user.id, passwordHash: sessionPasswordHash!, expirationTime: expire, sessionHash: sessionHash!)
+                        if validateRedirect(url: redirectURL) {
+                            return SiteResponse(status: .Redirect(location: redirectURL), session: forumSession)
+                        } else {
+                            return SiteResponse(status: .Redirect(location: "/"), session: forumSession)
+                        }
                     }
                 }
             }
@@ -919,9 +923,14 @@ extension SiteController {
     }
 
     public func loginPage(session: ForumSessionInfo) -> SiteResponse {
-        var data = commonData(locale: session.locale)
-        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Login")
-        return SiteResponse(status: .OK(view: "login.mustache", data: data), session: nil)
+        if getLoginUser(session: session) == nil {
+            var data = commonData(locale: session.locale)
+            data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Login")
+            data["redirect_url"] = session.referer
+            return SiteResponse(status: .OK(view: "login.mustache", data: data), session: nil)
+        } else {
+            return SiteResponse(status: .Redirect(location: "/"), session: session)
+        }
     }
 
     public func forgetPage(session: ForumSessionInfo) -> SiteResponse {
