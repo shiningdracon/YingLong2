@@ -130,7 +130,7 @@ class SiteMain {
                 response.addCookie(HTTPCookie(name: siteConfig.cookieName, value: "", domain: siteConfig.cookieDomain, expires: HTTPCookie.Expiration.absoluteSeconds(0), path: nil, secure: siteConfig.cookieSecure, httpOnly: true))
             }
 
-            response.addHeader(.contentSecurityPolicy, value: "default-src 'self'; img-src * data: blob:; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src * wss:;")
+            response.addHeader(.contentSecurityPolicy, value: "default-src 'self'; img-src * data: blob:; media-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src * wss:;")
             switch result.status {
             case .OK(view: let view, data: let data):
                 contxt.templatePath = "\(templatesDir)/\(view)"
