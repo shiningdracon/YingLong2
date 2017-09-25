@@ -18,6 +18,7 @@ public class ForumSessionInfo: SessionInfo {
 
 enum ForumError: Error {
     case GenerateCSRFError
+    case InternelError
 }
 
 extension SiteController {
@@ -240,13 +241,13 @@ extension SiteController {
                 if let user = dataManager.getUser(userID: onepost.poster_id) {
                     if let group = dataManager.getGroup(id: user.group_id) {
                         post["user_info"] = [
+                            "id": "\(onepost.id)",
                             "title": user.title ?? group.g_title,
                             //"registed": formatTime(time: Double(user.registered), timezone: Int(curUser.timezone), daySavingTime: Int(curUser.dst)),
-                            //"avatar_url": "", //TODO
                             ] as [String: Any]
                         postList.append(post)
                     } else {
-                        // Unexpected
+                        throw ForumError.InternelError
                     }
                 } else {
                     // Deleted user
@@ -532,6 +533,7 @@ extension SiteController {
         case post
         case privateMessage
         case chat
+        case avatar
     }
 
     public func postFileHandler(session: ForumSessionInfo, module: ForumUploadModule, id: UInt32, files: Array<(path: String, fileName: String, trackingId: String)>) -> SiteResponse {
@@ -562,6 +564,10 @@ extension SiteController {
             case .chat:
                 imageVersions = [
                     ImageUploader.ImageOptions(uploadDir: siteConfig["chatUploadDir"]!, nameSufix: "", maxWidth: 2048, maxHeight: 2048, quality: 77, rotateByExif: true, crop: false),
+                ]
+            case .avatar:
+                imageVersions = [
+                    ImageUploader.ImageOptions(uploadDir: siteConfig["avatarUploadDir"]!, nameSufix: "", maxWidth: 120, maxHeight: 120, quality: 77, rotateByExif: true, crop: false),
                 ]
             }
 
