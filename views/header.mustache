@@ -10,7 +10,7 @@
 		<header>
 			<div id="brdheader">
 				<div id="brdlogo"><span><a class="convert" href="/">测试{{o_board_title}}</a></span></div>
-				<form action="search.php">
+				<form action="/search">
 					<input maxlength="40" name="q" value="" type="text" />
 				</form>
 				<ul>
@@ -22,11 +22,11 @@
 					<li><a href="/login">{{#lang}}{{Login}}{{/lang}}</a></li>
 					{{/user}}
 					{{#user}}
-					<li><a href="/dragon/{{userID}}">{{username}}</a></li>
-					<li><a href="/search.php?action=show_subscriptions&amp;user_id={{userID}}">我的订阅</a></li>
+					<li><a href="/user/{{userID}}/profile">{{username}}</a></li>
+					<li><a href="/user/{{userID}}/subscriptions">我的订阅</a></li>
 					<li><a>关注的用户</a></li>
-					<li><a href="/viewnotifies">{{#lang}}{{Notifies}}{{/lang}}{{#new_notify}}({{number}}){{/new_notify}}</a></li>
-					<li><a href="/profile/{{userID}}">设置</a></li>
+					<li><a href="/user/{{userID}}/notifies">{{#lang}}{{Notifies}}{{/lang}}{{#new_notify}}({{number}}){{/new_notify}}</a></li>
+					<li><a href="/user/{{userID}}/settings">设置</a></li>
 					<li><a href="/logout?csrf_token={{csrf_token}}">{{#lang}}{{Logout}}{{/lang}}</a></li>
 					{{/user}}
 				</ul>
