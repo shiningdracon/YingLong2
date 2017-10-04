@@ -101,7 +101,7 @@ public final class SiteController {
     public func validateRedirect(url: String) -> Bool {
         if let components = URLComponents(string: url) {
             if let host = components.host {
-                //TODO: for sites not installed on root path, need support sub path
+                //TODO: if site is not installed on root path, need support sub path
                 if host == siteConfig["baseUrl"] {
                     return true
                 }

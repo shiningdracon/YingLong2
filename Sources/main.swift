@@ -384,11 +384,15 @@ extension SiteMain {
             return controller.forgetPage(session: session as! ForumSessionInfo)
         })
         addRouteMustache(method: .post, uri: "/login", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
-            let username = request.param(name: "req_username") ?? ""
+            let identity = request.param(name: "req_username") ?? ""
             let password = request.param(name: "req_password") ?? ""
             let savepass: Bool = (request.param(name: "save_pass") == "1") ? true : false
             let location = request.param(name: "redirect_url") ?? "/"
-            return controller.loginHandler(session: session as! ForumSessionInfo, username: username, password: password, savepass: savepass, redirectURL: location)
+            if identity.range(of:"@") != nil {
+                return controller.loginHandler(session: session as! ForumSessionInfo, email: identity, password: password, savepass: savepass, redirectURL: location)
+            } else {
+                return controller.loginHandler(session: session as! ForumSessionInfo, username: identity, password: password, savepass: savepass, redirectURL: location)
+            }
         })
         addRouteMustache(method: .get, uri: "/logout", handler: { (controller: SiteController, session: SessionInfo, request: HTTPRequest, response: HTTPResponse) in
             let csrf = request.param(name: "csrf_token") ?? ""

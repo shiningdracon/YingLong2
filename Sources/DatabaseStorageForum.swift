@@ -108,6 +108,22 @@ extension DatabaseStorage {
         return [:]
     }
 
+    public func getUser(email: String) -> [String: Any]? {
+        guard let results = db.select(statement: "select * from \(prefix)users where email=?", params: [.string(email)]) else {
+            return nil
+        }
+
+        defer {
+            db.clear()
+        }
+
+        if results.count == 1 {
+            return results[0]
+        }
+
+        return [:]
+    }
+
     public func getDefaultUser(remoteAddress: String) -> [String: Any]? {
         guard let results = db.select(statement: "SELECT u.*, g.*, o.logged, o.last_post, o.last_search FROM \(prefix)users AS u INNER JOIN \(prefix)groups AS g ON u.group_id=g.g_id LEFT JOIN \(prefix)online AS o ON o.ident=? WHERE u.id=1", params: [.string(remoteAddress)]) else {
             return nil

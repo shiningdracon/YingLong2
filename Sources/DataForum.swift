@@ -456,6 +456,16 @@ extension DataManager {
         return YLDBusers(args)
     }
 
+    public func getUser(email: String) throws -> YLDBusers? {
+        guard let args = dbStorage.getUser(email: email) else {
+            throw DataError.dbError
+        }
+        if args.count == 0 {
+            return nil
+        }
+        return YLDBusers(args)
+    }
+
     public func getDefaultUser(remoteAddress: String) throws -> YLDBusers? {
         guard let args = dbStorage.getDefaultUser(remoteAddress: remoteAddress) else {
             throw DataError.dbError

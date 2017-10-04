@@ -61,6 +61,7 @@ public class ForumI18n : SiteI18n {
             "img tag" : "[img] 标签:",
             "Smilies" : "表情符号:",
             "and" : "及",
+            "or" : "或",
             "Image link" : "图片",    // This is displayed (i.e. <image>) instead of images when "Show images" is disabled in the profile
             "wrote" : "写道:",    // For [quote]"s
             "Important information" : "重要信息",
@@ -275,6 +276,7 @@ public class ForumI18n : SiteI18n {
             "img tag" : "[img] 标签:",
             "Smilies" : "表情符号:",
             "and" : "及",
+            "or" : "或",
             "Image link" : "图片",    // This is displayed (i.e. <image>) instead of images when "Show images" is disabled in the profile
             "wrote" : "写道:",    // For [quote]"s
             "Important information" : "重要信息",

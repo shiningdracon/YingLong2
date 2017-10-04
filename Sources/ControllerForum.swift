@@ -83,6 +83,15 @@ extension SiteController {
         return nil
     }
 
+    func getLoginUser(email: String, password: String) throws -> YLDBusers? {
+        if let user = try dataManager.getUser(email: email) {
+            if authenticateUser(localPasswordHash: user.password, password: password) {
+                return user
+            }
+        }
+        return nil
+    }
+
     func getLoginUser(session: ForumSessionInfo) -> YLDBusers? {
         if let user = dataManager.getUser(userID: session.userID) {
             let now = utilities.getNow()
@@ -296,43 +305,75 @@ extension SiteController {
         }
     }
 
-    public func insertUploadedFile(fileName: String, localName: String, localDirectory: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) throws -> UInt32 {
+    func insertUploadedFile(fileName: String, localName: String, localDirectory: String, mimeType: String, size: UInt32, hash: String, userId: UInt32) throws -> UInt32 {
         let now = UInt32(self.utilities.getNow())
         return try self.dataManager.insertUpload(fileName: fileName, localName: localName, localDirectory: localDirectory, mimeType: mimeType, size: size, hash: hash, userId: userId, createTime: now)
     }
 
+    func loginHandler(session: SessionInfo, user: YLDBusers, savepass: Bool, redirectURL: String) -> SiteResponse {
+        let config = dataManager.getConfig()
+
+        let expire = savepass ? utilities.getNow() + 1209600 : utilities.getNow() + Double.init(config["o_timeout_visit"]!)!
+        let sessionPasswordHash = generateSessionPasswordHash(passwordHash: user.password)
+        guard let cookieSeed = siteConfig["cookieSeed"] else {
+            fatalError("cookieSeed not set")
+        }
+        let sessionHash = self.utilities.forumHMAC(data: "\(user.id)|\(expire)", key: "\(cookieSeed)_cookie_hash")
+        if sessionPasswordHash != nil && sessionHash != nil {
+            let forumSession = ForumSessionInfo(remoteAddress: session.remoteAddress, locale: session.locale, referer: "", userID: user.id, passwordHash: sessionPasswordHash!, expirationTime: expire, sessionHash: sessionHash!)
+            if validateRedirect(url: redirectURL) {
+                return SiteResponse(status: .Redirect(location: redirectURL), session: forumSession)
+            } else {
+                return SiteResponse(status: .Redirect(location: "/"), session: forumSession)
+            }
+        }
+
+        var data = commonData(locale: session.locale)
+        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Login")
+        let errors: [String: String] = ["description": ForumI18n.instance.getI18n(session.locale, key: "Wrong user/pass")]
+        data["errors"] = errors
+        return SiteResponse(status: .OK(view: "login.mustache", data: data), session: nil)
+    }
+
     // POST handlers
     public func loginHandler(session: SessionInfo, username: String, password: String, savepass: Bool, redirectURL: String) -> SiteResponse {
-        let config = dataManager.getConfig()
-        do {
-            if username.characters.count > 0 && password.characters.count > 0 {
+        if username.characters.count > 0 && password.characters.count > 0 {
+            do {
                 if let user = try getLoginUser(username: username, password: password) {
-                    let expire = savepass ? utilities.getNow() + 1209600 : utilities.getNow() + Double.init(config["o_timeout_visit"]!)!
-                    let sessionPasswordHash = generateSessionPasswordHash(passwordHash: user.password)
-                    guard let cookieSeed = siteConfig["cookieSeed"] else {
-                        fatalError("cookieSeed not set")
-                    }
-                    let sessionHash = self.utilities.forumHMAC(data: "\(user.id)|\(expire)", key: "\(cookieSeed)_cookie_hash")
-                    if sessionPasswordHash != nil && sessionHash != nil {
-                        let forumSession = ForumSessionInfo(remoteAddress: session.remoteAddress, locale: session.locale, referer: "", userID: user.id, passwordHash: sessionPasswordHash!, expirationTime: expire, sessionHash: sessionHash!)
-                        if validateRedirect(url: redirectURL) {
-                            return SiteResponse(status: .Redirect(location: redirectURL), session: forumSession)
-                        } else {
-                            return SiteResponse(status: .Redirect(location: "/"), session: forumSession)
-                        }
-                    }
+                    return loginHandler(session: session, user: user, savepass: savepass, redirectURL: redirectURL)
                 }
+            } catch is DataError {
+                return SiteResponse(status: .Error(message: "DB failed"), session: session)
+            } catch {
+                return SiteResponse(status: .Error(message: "Unknow error"), session: session)
             }
-            var data = commonData(locale: session.locale)
-            data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Login")
-            let errors: [String: String] = ["description": ForumI18n.instance.getI18n(session.locale, key: "Wrong user/pass")]
-            data["errors"] = errors
-            return SiteResponse(status: .OK(view: "login.mustache", data: data), session: nil)
-        } catch is DataError {
-            return SiteResponse(status: .Error(message: "DB failed"), session: session)
-        } catch {
-            return SiteResponse(status: .Error(message: "Unknow error"), session: session)
         }
+
+        var data = commonData(locale: session.locale)
+        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Login")
+        let errors: [String: String] = ["description": ForumI18n.instance.getI18n(session.locale, key: "Wrong user/pass")]
+        data["errors"] = errors
+        return SiteResponse(status: .OK(view: "login.mustache", data: data), session: nil)
+    }
+
+    public func loginHandler(session: SessionInfo, email: String, password: String, savepass: Bool, redirectURL: String) -> SiteResponse {
+        if email.characters.count > 0 && password.characters.count > 0 {
+            do {
+                if let user = try getLoginUser(email: email, password: password) {
+                    return loginHandler(session: session, user: user, savepass: savepass, redirectURL: redirectURL)
+                }
+            } catch is DataError {
+                return SiteResponse(status: .Error(message: "DB failed"), session: session)
+            } catch {
+                return SiteResponse(status: .Error(message: "Unknow error"), session: session)
+            }
+        }
+
+        var data = commonData(locale: session.locale)
+        data["page_title"] = ForumI18n.instance.getI18n(session.locale, key: "Login")
+        let errors: [String: String] = ["description": ForumI18n.instance.getI18n(session.locale, key: "Wrong user/pass")]
+        data["errors"] = errors
+        return SiteResponse(status: .OK(view: "login.mustache", data: data), session: nil)
     }
 
     public func postTopicHandler(session: ForumSessionInfo, subject: String, message: String, forumId: UInt32, attachedFile: String? = nil, CSRFToken: String) -> SiteResponse {
